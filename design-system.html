@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#142a66">
+  <meta name="description" content="ExamMate 五科自主學習平台 Design System 元件與視覺規範。">
+  <title>ExamMate Design System v1.0</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip-link" href="#design-system-content">跳到主要內容</a>
+  <main id="design-system-content" class="design-system-page">
+    <header class="product-topbar">
+      <a class="brand" href="index.html" aria-label="回到 ExamMate">
+        <span class="brand-mark brand-mark-small" aria-hidden="true">E</span>
+        <span><strong>ExamMate</strong><small>Design System</small></span>
+      </a>
+      <a class="button button-secondary button-small" href="index.html">返回學生平台</a>
+    </header>
+
+    <section class="design-system-intro">
+      <div>
+        <p class="eyebrow">DESIGN SYSTEM</p>
+        <h1>同一套元件，陪學生學好五科。</h1>
+        <p>五科只更換內容與辨識色，操作方式、文字層級、按鈕位置與回饋節奏保持一致，讓學生不用重新學習介面。</p>
+      </div>
+      <div class="version-card"><span>目前版本</span><strong>v1.0 UI Prototype</strong></div>
+    </section>
+
+    <section id="colors" class="ds-section">
+      <div class="ds-section-heading"><h2>Color System</h2><p>深藍建立信任感，靛藍負責主要操作，橘色用於時間提醒；成功與錯誤色只用於結果回饋。</p></div>
+      <div class="ds-canvas token-grid">
+        <div class="color-token"><div class="color-swatch" style="--token-color:#0b1738"></div><div class="color-meta"><strong>Navy 950</strong><code>#0B1738</code></div></div>
+        <div class="color-token"><div class="color-swatch" style="--token-color:#3c5ed0"></div><div class="color-meta"><strong>Indigo 600</strong><code>#3C5ED0</code></div></div>
+        <div class="color-token"><div class="color-swatch" style="--token-color:#f59d2a"></div><div class="color-meta"><strong>Orange 500</strong><code>#F59D2A</code></div></div>
+        <div class="color-token"><div class="color-swatch" style="--token-color:#32b49a"></div><div class="color-meta"><strong>Mint 500</strong><code>#32B49A</code></div></div>
+        <div class="color-token"><div class="color-swatch" style="--token-color:#d84a5b"></div><div class="color-meta"><strong>Red 500</strong><code>#D84A5B</code></div></div>
+        <div class="color-token"><div class="color-swatch" style="--token-color:#17223d"></div><div class="color-meta"><strong>Ink</strong><code>#17223D</code></div></div>
+        <div class="color-token"><div class="color-swatch" style="--token-color:#f4f6fb"></div><div class="color-meta"><strong>Background</strong><code>#F4F6FB</code></div></div>
+        <div class="color-token"><div class="color-swatch" style="--token-color:#ffffff"></div><div class="color-meta"><strong>Surface</strong><code>#FFFFFF</code></div></div>
+      </div>
+    </section>
+
+    <section id="typography" class="ds-section">
+      <div class="ds-section-heading"><h2>Typography</h2><p>優先使用系統內建的繁體中文字體，粗體用於方向與成果，內文保持寬鬆行距，讓國中生快速掃讀。</p></div>
+      <div class="ds-canvas">
+        <div class="type-sample"><span>Display / 900</span><div class="type-display">今天完成一小步。</div></div>
+        <div class="type-sample"><span>Heading / 900</span><div class="type-heading">國文今日任務</div></div>
+        <div class="type-sample"><span>Body / 400</span><div class="type-body">每次只專注一個清楚的小任務，完成後立即查看解析，再決定下一步。</div></div>
+      </div>
+    </section>
+
+    <section id="icons" class="ds-section">
+      <div class="ds-section-heading"><h2>Icon Style</h2><p>使用單色、圓角外框與簡單符號；不使用寫實插圖或混雜風格。圖示永遠搭配文字，不單獨承擔意思。</p></div>
+      <div class="ds-canvas icon-style-grid">
+        <div class="icon-specimen" data-subject-theme="chinese"><span class="subject-glyph">文</span><span>國文</span></div>
+        <div class="icon-specimen" data-subject-theme="english"><span class="subject-glyph">A</span><span>英文</span></div>
+        <div class="icon-specimen" data-subject-theme="math"><span class="subject-glyph">∑</span><span>數學</span></div>
+        <div class="icon-specimen" data-subject-theme="science"><span class="subject-glyph">科</span><span>自然</span></div>
+        <div class="icon-specimen" data-subject-theme="social"><span class="subject-glyph">地</span><span>社會</span></div>
+      </div>
+    </section>
+
+    <section id="buttons" class="ds-section">
+      <div class="ds-section-heading"><h2>Button</h2><p>每個畫面只保留一個最重要的主按鈕。次要、安靜與危險操作使用不同層級，避免學生誤按。</p></div>
+      <div class="ds-canvas component-row">
+        <button class="button button-primary" type="button">開始練習</button>
+        <button class="button button-secondary" type="button">返回上一頁</button>
+        <button class="button button-accent" type="button">儲存目標</button>
+        <button class="button button-quiet" type="button">稍後再做</button>
+        <button class="button button-danger" type="button">清除紀錄</button>
+        <button class="button button-primary" type="button" disabled>尚未選答案</button>
+      </div>
+    </section>
+
+    <section id="cards" class="ds-section">
+      <div class="ds-section-heading"><h2>Card</h2><p>所有卡片使用白色底、清楚邊框、18px 圓角與輕量陰影。只有可點擊卡片才會在滑入時浮起。</p></div>
+      <div class="ds-canvas subject-card-grid">
+        <button class="subject-card" type="button" data-subject-theme="chinese"><span class="subject-glyph">文</span><h3>國文</h3><p>閱讀、語文與文字理解</p><span class="subject-card-arrow">→</span></button>
+        <button class="subject-card" type="button" data-subject-theme="english"><span class="subject-glyph">A</span><h3>英文</h3><p>單字、文法與閱讀理解</p><span class="subject-card-arrow">→</span></button>
+        <button class="subject-card" type="button" data-subject-theme="math"><span class="subject-glyph">∑</span><h3>數學</h3><p>計算、推理與生活應用</p><span class="subject-card-arrow">→</span></button>
+      </div>
+    </section>
+
+    <section id="progress" class="ds-section">
+      <div class="ds-section-heading"><h2>Progress Bar</h2><p>進度條必須同時顯示文字或數字，不只依靠顏色。動畫只在數值更新時短暫發生。</p></div>
+      <div class="ds-canvas">
+        <div class="progress-meta"><span>今日完成 2／3 科</span><strong>67%</strong></div>
+        <div class="progress-bar progress-bar-large" role="progressbar" aria-label="示範進度 67%" aria-valuemin="0" aria-valuemax="100" aria-valuenow="67"><span style="width:67%"></span></div>
+      </div>
+    </section>
+
+    <section id="task-card" class="ds-section">
+      <div class="ds-section-heading"><h2>Task Card</h2><p>固定包含科目、時間、狀態、任務說明、進度與單一主要行動，讓學生一眼知道現在要做什麼。</p></div>
+      <div class="ds-canvas task-card-grid">
+        <article class="task-card" data-subject-theme="chinese"><div class="task-card-head"><div class="subject-identity"><span class="subject-glyph">文</span><strong>國文</strong></div><span class="task-status">未開始</span></div><h3>國文 10 分鐘</h3><p>完成 3 題閱讀與語文練習，答題後立即看解析。</p><div class="progress-bar"><span></span></div><button class="button button-primary" type="button">開始任務</button></article>
+        <article class="task-card is-completed" data-subject-theme="english"><div class="task-card-head"><div class="subject-identity"><span class="subject-glyph">A</span><strong>英文</strong></div><span class="task-status">今日完成</span></div><h3>今天已完成，做得很好！</h3><p>明天會自動產生新的今日任務。</p><div class="progress-bar"><span style="width:100%"></span></div><button class="button button-secondary" type="button">再次練習</button></article>
+      </div>
+    </section>
+
+    <section id="practice-card" class="ds-section">
+      <div class="ds-section-heading"><h2>Practice Card</h2><p>題幹、選項與確認按鈕保持固定位置；學生選答案前，確認按鈕保持停用。</p></div>
+      <div class="ds-canvas">
+        <article class="practice-card" data-subject-theme="math"><div class="practice-card-head"><span class="status-badge">單選題</span><span class="practice-hint">第 1／3 題</span></div><h1>若 3x＋5＝20，則 x 的值是多少？</h1><div class="option-list"><button class="option-button" type="button"><span class="option-letter">A</span><span>3</span></button><button class="option-button is-selected" type="button"><span class="option-letter">B</span><span>5</span></button><button class="option-button" type="button"><span class="option-letter">C</span><span>8</span></button></div><div class="practice-submit-row"><span class="practice-hint">作答後立即顯示解析。</span><button class="button button-primary" type="button">確認答案</button></div></article>
+      </div>
+    </section>
+
+    <section id="wrong-card" class="ds-section">
+      <div class="ds-section-heading"><h2>Wrong Question Card</h2><p>錯題卡顯示題幹、錯誤次數與觀念提醒，提供「再答一次」與「已掌握」兩個行動。</p></div>
+      <div class="ds-canvas">
+        <article class="wrong-question-card" data-subject-theme="science"><div class="wrong-card-head"><div class="subject-identity"><span class="subject-glyph">科</span><strong>自然・理化</strong></div><span class="status-badge">答錯 2 次</span></div><h3>聲音無法在哪一種環境中傳播？</h3><p><strong>觀念提醒：</strong>聲音需要介質傳播；真空中沒有可傳遞振動的粒子。</p><div class="wrong-card-actions"><button class="button button-secondary button-small" type="button">標記已掌握</button><button class="button button-primary button-small" type="button">再答一次</button></div></article>
+      </div>
+    </section>
+
+    <section id="dialog" class="ds-section">
+      <div class="ds-section-heading"><h2>Dialog</h2><p>用於立即解析與需要再次確認的操作。內容保持短、焦點明確，關閉後回到原本流程。</p></div>
+      <div class="ds-canvas component-row"><button id="open-dialog-demo" class="button button-primary" type="button">開啟立即解析 Dialog</button></div>
+    </section>
+
+    <section id="navigation" class="ds-section">
+      <div class="ds-section-heading"><h2>Navigation</h2><p>桌機使用頂部導覽，主要項目固定為首頁、五科學習與錯題。</p></div>
+      <div class="ds-canvas">
+        <div class="ds-navigation-demo"><nav class="desktop-navigation" aria-label="桌機導覽示範"><button class="nav-item" type="button"><span class="nav-icon">⌂</span>首頁</button><button class="nav-item is-active" type="button"><span class="nav-icon">▦</span>五科學習</button><button class="nav-item" type="button"><span class="nav-icon">↺</span>錯題</button></nav></div>
+      </div>
+    </section>
+
+    <section id="bottom-navigation-spec" class="ds-section">
+      <div class="ds-section-heading"><h2>Bottom Navigation</h2><p>手機版固定於畫面下方，保留三個最常用入口；文字與符號同時顯示，單手也容易點選。</p></div>
+      <div class="ds-canvas"><nav class="bottom-navigation bottom-navigation-demo" aria-label="手機底部導覽示範"><button class="bottom-nav-item" type="button"><span>⌂</span><small>首頁</small></button><button class="bottom-nav-item is-active" type="button"><span>▦</span><small>五科</small></button><button class="bottom-nav-item" type="button"><span>↺</span><small>錯題</small></button></nav></div>
+    </section>
+  </main>
+
+  <dialog id="dialog-demo" class="answer-dialog">
+    <div class="answer-dialog-icon" aria-hidden="true">✓</div>
+    <p class="section-label">立即解析・答對</p>
+    <h2>答對了！</h2>
+    <p class="answer-key">正確答案：B．5</p>
+    <p class="answer-explanation">等式兩邊先減 5，得 3x＝15；再除以 3，得到 x＝5。</p>
+    <div class="dialog-actions"><button id="close-dialog-demo" class="button button-primary button-full" type="button">繼續下一題</button></div>
+  </dialog>
+
+  <script>
+    const dialog = document.querySelector("#dialog-demo");
+    document.querySelector("#open-dialog-demo").addEventListener("click", () => dialog.showModal());
+    document.querySelector("#close-dialog-demo").addEventListener("click", () => dialog.close());
+  </script>
+</body>
+</html>
