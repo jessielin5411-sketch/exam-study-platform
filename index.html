@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#142a66">
+  <meta name="description" content="陪伴國中生掌握會考倒數、重要考試與每日學習節奏的自主學習平台。">
+  <title>會考進行式｜國中會考自主學習平台</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到主要內容</a>
+
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+
+  <main id="main-content" class="page-shell">
+    <div id="data-alert" class="data-alert" role="alert" hidden>
+      <div>
+        <strong>部分資料讀取失敗</strong>
+        <p id="data-alert-message">資料可能已損壞，請重新設定。</p>
+      </div>
+      <button id="alert-reset-button" class="button button-danger button-small" type="button">重新設定資料</button>
+    </div>
+
+    <section id="setup-view" class="setup-layout" aria-labelledby="setup-title">
+      <div class="setup-intro">
+        <div class="brand-mark" aria-hidden="true">進</div>
+        <p class="eyebrow">會考進行式</p>
+        <h1 id="setup-title">建立我的學習資料</h1>
+        <p class="lead">先花一分鐘設定目標，讓每一次打開網站，都知道自己正在往哪裡前進。</p>
+        <div class="intro-points" aria-label="平台特色">
+          <span>即時倒數</span>
+          <span>重要日期</span>
+          <span>每日小目標</span>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-heading">
+          <div>
+            <p class="step-label">STEP 01</p>
+            <h2 id="profile-form-title">你的基本資料</h2>
+          </div>
+          <button id="cancel-profile-edit" class="text-button" type="button" hidden>取消修改</button>
+        </div>
+
+        <form id="profile-form" novalidate>
+          <div class="form-grid">
+            <label class="field field-wide">
+              <span>學生姓名或暱稱 <em>必填</em></span>
+              <input id="student-name" name="studentName" type="text" maxlength="20" autocomplete="nickname" placeholder="例如：小宇" required>
+              <small class="field-error" data-error-for="studentName"></small>
+            </label>
+
+            <label class="field field-wide">
+              <span>學校名稱 <small>選填</small></span>
+              <input id="school-name" name="schoolName" type="text" maxlength="40" autocomplete="organization" placeholder="例如：希望國中">
+            </label>
+
+            <label class="field">
+              <span>年級 <em>必填</em></span>
+              <select id="grade" name="grade" required>
+                <option value="">請選擇</option>
+                <option value="七年級">七年級</option>
+                <option value="八年級">八年級</option>
+                <option value="九年級">九年級</option>
+              </select>
+              <small class="field-error" data-error-for="grade"></small>
+            </label>
+
+            <label class="field">
+              <span>班級 <small>選填</small></span>
+              <input id="class-name" name="className" type="text" maxlength="20" placeholder="例如：九年三班">
+            </label>
+
+            <label class="field">
+              <span>目標會考年度 <em>必填</em></span>
+              <select id="exam-year" name="examYear" required></select>
+              <small class="field-error" data-error-for="examYear"></small>
+            </label>
+
+            <label class="field">
+              <span>目標成績 <em>必填</em></span>
+              <input id="target-score" name="targetScore" type="text" maxlength="30" placeholder="例如：5A、34.6 分" required>
+              <small class="field-error" data-error-for="targetScore"></small>
+            </label>
+
+            <fieldset class="field field-wide subject-fieldset">
+              <legend>最需要加強的科目 <small>可複選</small></legend>
+              <div class="subject-options">
+                <label><input type="checkbox" name="weakSubjects" value="國文"><span>國文</span></label>
+                <label><input type="checkbox" name="weakSubjects" value="英語"><span>英語</span></label>
+                <label><input type="checkbox" name="weakSubjects" value="數學"><span>數學</span></label>
+                <label><input type="checkbox" name="weakSubjects" value="自然"><span>自然</span></label>
+                <label><input type="checkbox" name="weakSubjects" value="社會"><span>社會</span></label>
+              </div>
+            </fieldset>
+
+            <label class="field field-wide">
+              <span>每天預計讀書時間 <em>必填</em></span>
+              <select id="daily-study-time" name="dailyStudyTime" required>
+                <option value="">請選擇</option>
+                <option value="30 分鐘">30 分鐘</option>
+                <option value="1 小時">1 小時</option>
+                <option value="1.5 小時">1.5 小時</option>
+                <option value="2 小時">2 小時</option>
+                <option value="3 小時以上">3 小時以上</option>
+              </select>
+              <small class="field-error" data-error-for="dailyStudyTime"></small>
+            </label>
+
+            <label class="field field-wide">
+              <span>自我勉勵的一句話 <em>必填</em></span>
+              <textarea id="motto" name="motto" rows="3" maxlength="100" placeholder="例如：每天比昨天多前進一點點。" required></textarea>
+              <small class="field-error" data-error-for="motto"></small>
+            </label>
+          </div>
+
+          <button class="button button-primary button-full" type="submit">
+            <span id="profile-submit-label">開始我的會考準備</span>
+            <span aria-hidden="true">→</span>
+          </button>
+          <p class="privacy-note">資料只會儲存在這個瀏覽器，不會上傳到網路。</p>
+        </form>
+      </div>
+    </section>
+
+    <section id="dashboard-view" class="dashboard" aria-labelledby="welcome-title" hidden>
+      <header class="topbar">
+        <a class="brand" href="#dashboard-view" aria-label="回到首頁頂端">
+          <span class="brand-mark brand-mark-small" aria-hidden="true">進</span>
+          <span><strong>會考進行式</strong><small>自主學習平台</small></span>
+        </a>
+        <div class="student-chip">
+          <span class="student-avatar" id="student-avatar" aria-hidden="true">同</span>
+          <span><small>今日學習者</small><strong id="student-chip-name">同學</strong></span>
+        </div>
+      </header>
+
+      <div class="welcome-row">
+        <div>
+          <p class="eyebrow" id="today-label">今天</p>
+          <h1 id="welcome-title">嗨，同學！距離會考又更近了一天。</h1>
+        </div>
+        <div class="goal-badge">
+          <span>目標</span>
+          <strong id="target-score-display">—</strong>
+        </div>
+      </div>
+
+      <section class="countdown-hero" aria-labelledby="final-exam-heading">
+        <div class="hero-copy">
+          <div class="hero-kicker"><span class="live-dot" aria-hidden="true"></span> TARGET COUNTDOWN</div>
+          <h2 id="final-exam-heading">國中教育會考</h2>
+          <p id="final-exam-date">正式日期：—</p>
+        </div>
+
+        <div id="final-countdown" class="countdown-grid" aria-live="off">
+          <div class="time-unit time-unit-main"><strong id="countdown-days">000</strong><span>天</span></div>
+          <div class="time-unit"><strong id="countdown-hours">00</strong><span>小時</span></div>
+          <div class="time-unit"><strong id="countdown-minutes">00</strong><span>分鐘</span></div>
+          <div class="time-unit"><strong id="countdown-seconds">00</strong><span>秒</span></div>
+        </div>
+
+        <div class="progress-panel">
+          <div class="progress-meta">
+            <span>準備進度</span>
+            <strong id="progress-percent">0%</strong>
+          </div>
+          <div class="progress-track" role="progressbar" aria-label="會考準備進度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <span id="progress-bar"></span>
+          </div>
+          <div class="progress-foot">
+            <span id="elapsed-days">已走過 0 天</span>
+            <span id="remaining-summary">還有時間，穩穩前進</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="next-exam-card" class="next-exam" aria-labelledby="next-exam-title">
+        <div class="next-icon" aria-hidden="true">→</div>
+        <div>
+          <p class="section-label">下一個重要日程</p>
+          <h2 id="next-exam-title">目前沒有即將到來的考試</h2>
+          <p id="next-exam-note">新增重要日期，讓準備更有方向。</p>
+        </div>
+        <div class="next-days"><strong id="next-exam-days">—</strong><span>天後</span></div>
+      </section>
+
+      <section class="section-block" aria-labelledby="timeline-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-label">EXAM TIMELINE</p>
+            <h2 id="timeline-title">考試時間軸</h2>
+          </div>
+          <button id="open-date-manager-top" class="button button-secondary button-small" type="button">＋ 管理重要日期</button>
+        </div>
+        <div id="exam-cards" class="exam-card-grid"></div>
+      </section>
+
+      <section class="time-awareness" aria-labelledby="time-awareness-title">
+        <div class="time-panel time-panel-dark">
+          <p class="section-label">TIME CHECK</p>
+          <h2 id="time-awareness-title">把握現在，不必急著完美</h2>
+          <p id="rotating-reminder">時間不會停下來，但你可以決定今天怎麼使用它。</p>
+        </div>
+        <div class="mini-stat">
+          <span class="mini-icon" aria-hidden="true">週</span>
+          <div><small>本週還剩</small><strong id="week-days-left">— 天</strong></div>
+        </div>
+        <div class="mini-stat">
+          <span class="mini-icon mini-icon-orange" aria-hidden="true">月</span>
+          <div><small>本月還剩</small><strong id="month-days-left">— 天</strong></div>
+        </div>
+      </section>
+
+      <section class="daily-goal-card" aria-labelledby="daily-goal-title">
+        <div class="goal-number">01</div>
+        <div class="goal-content">
+          <p class="section-label">TODAY'S SMALL WIN</p>
+          <h2 id="daily-goal-title">今天可以完成的小目標</h2>
+          <form id="daily-goal-form" class="daily-goal-form">
+            <label class="sr-only" for="daily-goal-input">輸入今天的小目標</label>
+            <input id="daily-goal-input" maxlength="80" placeholder="例如：訂正 10 題數學錯題">
+            <button class="button button-accent" type="submit">儲存目標</button>
+          </form>
+          <p id="daily-goal-status" class="goal-status">完成一件小事，就值得替自己記上一筆。</p>
+        </div>
+      </section>
+
+      <blockquote class="motto-card">
+        <span class="quote-mark" aria-hidden="true">“</span>
+        <p id="motto-display">每天比昨天多前進一點點。</p>
+        <footer>— 給努力中的自己</footer>
+      </blockquote>
+
+      <section class="action-bar" aria-label="資料管理">
+        <div>
+          <h2>把這裡調整成最適合你的節奏</h2>
+          <p>資料只存在這台裝置的瀏覽器中。</p>
+        </div>
+        <div class="action-buttons">
+          <button id="edit-profile-button" class="button button-secondary" type="button">修改個人資料</button>
+          <button id="open-date-manager" class="button button-primary" type="button">管理重要日期</button>
+          <button id="reset-profile-button" class="button button-quiet" type="button">重新設定</button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="date-manager-dialog" class="dialog-shell">
+    <div class="dialog-header">
+      <div>
+        <p class="section-label">DATE MANAGER</p>
+        <h2>管理重要日期</h2>
+      </div>
+      <button class="icon-button" data-close-dialog="date-manager-dialog" type="button" aria-label="關閉">×</button>
+    </div>
+    <div class="dialog-body dialog-grid">
+      <form id="event-form" class="event-form" novalidate>
+        <input id="event-id" name="eventId" type="hidden">
+        <h3 id="event-form-title">新增重要日期</h3>
+        <label class="field">
+          <span>考試名稱 <em>必填</em></span>
+          <input id="event-name" name="eventName" maxlength="40" placeholder="例如：第一次段考" required>
+          <small class="field-error" data-event-error-for="eventName"></small>
+        </label>
+        <label class="field">
+          <span>日期 <em>必填</em></span>
+          <input id="event-date" name="eventDate" type="text" inputmode="numeric" maxlength="9" placeholder="例如：民國116-09-01" aria-describedby="event-date-help" required>
+          <small class="field-error" data-event-error-for="eventDate"></small>
+          <small id="event-date-help">請輸入民國年，格式為 116-09-01。</small>
+        </label>
+        <label class="field">
+          <span>類型 <em>必填</em></span>
+          <select id="event-type" name="eventType" required>
+            <option value="">請選擇</option>
+            <option value="模擬考">模擬考</option>
+            <option value="段考">段考</option>
+            <option value="複習考">複習考</option>
+            <option value="報名截止日">報名截止日</option>
+            <option value="其他">其他</option>
+          </select>
+          <small class="field-error" data-event-error-for="eventType"></small>
+        </label>
+        <label class="field">
+          <span>備註 <small>選填</small></span>
+          <textarea id="event-note" name="eventNote" rows="3" maxlength="120" placeholder="寫下要準備的範圍或提醒"></textarea>
+        </label>
+        <div class="form-actions">
+          <button id="cancel-event-edit" class="button button-secondary" type="button" hidden>取消修改</button>
+          <button class="button button-primary" type="submit"><span id="event-submit-label">新增日期</span></button>
+        </div>
+        <p class="form-help">可以新增過去的日期；系統會保留並標示為「已結束」。</p>
+      </form>
+      <div class="event-list-panel">
+        <div class="event-list-heading">
+          <h3>我的日期清單</h3>
+          <span id="event-count">0 筆</span>
+        </div>
+        <div id="event-list" class="event-list"></div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="reset-dialog" class="confirm-dialog">
+    <div class="confirm-icon" aria-hidden="true">!</div>
+    <h2>確定要重新設定嗎？</h2>
+    <p>這會清除個人資料、自訂日期與今日小目標，而且無法復原。</p>
+    <div class="form-actions">
+      <button class="button button-secondary" data-close-dialog="reset-dialog" type="button">先不要</button>
+      <button id="confirm-reset-button" class="button button-danger" type="button">清除全部資料</button>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <noscript>
+    <div class="noscript-message">此網站需要啟用 JavaScript 才能顯示倒數與儲存資料。</div>
+  </noscript>
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
