@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#142a66">
+  <meta name="theme-color" content="#3faeb9">
   <meta name="description" content="ExamMate 五科自主學習平台 Design System 元件與視覺規範。">
   <title>ExamMate Design System v1.0</title>
   <link rel="stylesheet" href="style.css">
@@ -25,20 +25,20 @@
         <h1>同一套元件，陪學生學好五科。</h1>
         <p>五科只更換內容與辨識色，操作方式、文字層級、按鈕位置與回饋節奏保持一致，讓學生不用重新學習介面。</p>
       </div>
-      <div class="version-card"><span>目前版本</span><strong>v1.0 UI Prototype</strong></div>
+      <div class="version-card"><span>目前版本</span><strong>v1.3 Dual Theme</strong></div>
     </section>
 
     <section id="colors" class="ds-section">
-      <div class="ds-section-heading"><h2>Color System</h2><p>深藍建立信任感，靛藍負責主要操作，橘色用於時間提醒；成功與錯誤色只用於結果回饋。</p></div>
+      <div class="ds-section-heading"><h2>Color System</h2><p>明亮柔藍與水綠帶來清爽陪讀感，暖白保留舒適留白，杏橘只用於溫和提醒。</p></div>
       <div class="ds-canvas token-grid">
-        <div class="color-token"><div class="color-swatch" style="--token-color:#0b1738"></div><div class="color-meta"><strong>Navy 950</strong><code>#0B1738</code></div></div>
-        <div class="color-token"><div class="color-swatch" style="--token-color:#3c5ed0"></div><div class="color-meta"><strong>Indigo 600</strong><code>#3C5ED0</code></div></div>
-        <div class="color-token"><div class="color-swatch" style="--token-color:#f59d2a"></div><div class="color-meta"><strong>Orange 500</strong><code>#F59D2A</code></div></div>
-        <div class="color-token"><div class="color-swatch" style="--token-color:#32b49a"></div><div class="color-meta"><strong>Mint 500</strong><code>#32B49A</code></div></div>
-        <div class="color-token"><div class="color-swatch" style="--token-color:#d84a5b"></div><div class="color-meta"><strong>Red 500</strong><code>#D84A5B</code></div></div>
-        <div class="color-token"><div class="color-swatch" style="--token-color:#17223d"></div><div class="color-meta"><strong>Ink</strong><code>#17223D</code></div></div>
-        <div class="color-token"><div class="color-swatch" style="--token-color:#f4f6fb"></div><div class="color-meta"><strong>Background</strong><code>#F4F6FB</code></div></div>
-        <div class="color-token"><div class="color-swatch" style="--token-color:#ffffff"></div><div class="color-meta"><strong>Surface</strong><code>#FFFFFF</code></div></div>
+        <div class="color-token"><div class="color-swatch" style="--token-color:#173f52"></div><div class="color-meta"><strong>Deep Ocean</strong><code>#173F52</code></div></div>
+        <div class="color-token"><div class="color-swatch" style="--token-color:#5588dc"></div><div class="color-meta"><strong>Study Blue</strong><code>#5588DC</code></div></div>
+        <div class="color-token"><div class="color-swatch" style="--token-color:#ffad5c"></div><div class="color-meta"><strong>Warm Apricot</strong><code>#FFAD5C</code></div></div>
+        <div class="color-token"><div class="color-swatch" style="--token-color:#50c7a9"></div><div class="color-meta"><strong>Fresh Mint</strong><code>#50C7A9</code></div></div>
+        <div class="color-token"><div class="color-swatch" style="--token-color:#e77583"></div><div class="color-meta"><strong>Gentle Coral</strong><code>#E77583</code></div></div>
+        <div class="color-token"><div class="color-swatch" style="--token-color:#203b48"></div><div class="color-meta"><strong>Comfort Ink</strong><code>#203B48</code></div></div>
+        <div class="color-token"><div class="color-swatch" style="--token-color:#f4fbff"></div><div class="color-meta"><strong>Sky Background</strong><code>#F4FBFF</code></div></div>
+        <div class="color-token"><div class="color-swatch" style="--token-color:#ffffff"></div><div class="color-meta"><strong>Clear Surface</strong><code>#FFFFFF</code></div></div>
       </div>
     </section>
 
@@ -75,7 +75,7 @@
     </section>
 
     <section id="cards" class="ds-section">
-      <div class="ds-section-heading"><h2>Card</h2><p>所有卡片使用白色底、清楚邊框、18px 圓角與輕量陰影。只有可點擊卡片才會在滑入時浮起。</p></div>
+      <div class="ds-section-heading"><h2>Card</h2><p>所有卡片使用清透白底、柔和藍綠邊框、20px 圓角與輕量陰影。只有可點擊卡片才會在滑入時微微浮起。</p></div>
       <div class="ds-canvas subject-card-grid">
         <button class="subject-card" type="button" data-subject-theme="chinese"><span class="subject-glyph">文</span><h3>國文</h3><p>閱讀、語文與文字理解</p><span class="subject-card-arrow">→</span></button>
         <button class="subject-card" type="button" data-subject-theme="english"><span class="subject-glyph">A</span><h3>英文</h3><p>單字、文法與閱讀理解</p><span class="subject-card-arrow">→</span></button>
@@ -86,8 +86,8 @@
     <section id="progress" class="ds-section">
       <div class="ds-section-heading"><h2>Progress Bar</h2><p>進度條必須同時顯示文字或數字，不只依靠顏色。動畫只在數值更新時短暫發生。</p></div>
       <div class="ds-canvas">
-        <div class="progress-meta"><span>今日完成 2／3 科</span><strong>67%</strong></div>
-        <div class="progress-bar progress-bar-large" role="progressbar" aria-label="示範進度 67%" aria-valuemin="0" aria-valuemax="100" aria-valuenow="67"><span style="width:67%"></span></div>
+        <div class="progress-meta"><span>今日完成 4／5 科</span><strong>80%</strong></div>
+        <div class="progress-bar progress-bar-large" role="progressbar" aria-label="示範進度 80%" aria-valuemin="0" aria-valuemax="100" aria-valuenow="80"><span style="width:80%"></span></div>
       </div>
     </section>
 
@@ -106,6 +106,13 @@
       </div>
     </section>
 
+    <section id="unit-review-card" class="ds-section">
+      <div class="ds-section-heading"><h2>Unit Review Card</h2><p>學生先展開三項考前重點，再開始單元練習；複習與作答使用同一個單元分類。</p></div>
+      <div class="ds-canvas unit-review-list">
+        <details class="unit-review-card" data-subject-theme="chinese" open><summary><span class="unit-number">01</span><span><strong>閱讀理解</strong><small>2 題原創練習</small></span><span class="review-toggle">＋</span></summary><div class="unit-review-content"><p class="review-label">考前先記住</p><ul><li>先找寫作目的與中心問題</li><li>區分文本明說與合理推論</li><li>避免加入文中沒有的資訊</li></ul><button class="button button-primary button-small" type="button">開始這個單元</button></div></details>
+      </div>
+    </section>
+
     <section id="wrong-card" class="ds-section">
       <div class="ds-section-heading"><h2>Wrong Question Card</h2><p>錯題卡顯示題幹、錯誤次數與觀念提醒，提供「再答一次」與「已掌握」兩個行動。</p></div>
       <div class="ds-canvas">
@@ -119,15 +126,15 @@
     </section>
 
     <section id="navigation" class="ds-section">
-      <div class="ds-section-heading"><h2>Navigation</h2><p>桌機使用頂部導覽，主要項目固定為首頁、五科學習與錯題。</p></div>
+      <div class="ds-section-heading"><h2>Navigation</h2><p>桌機使用頂部導覽，主要項目固定為首頁、複習計畫、五科學習與錯題。</p></div>
       <div class="ds-canvas">
-        <div class="ds-navigation-demo"><nav class="desktop-navigation" aria-label="桌機導覽示範"><button class="nav-item" type="button"><span class="nav-icon">⌂</span>首頁</button><button class="nav-item is-active" type="button"><span class="nav-icon">▦</span>五科學習</button><button class="nav-item" type="button"><span class="nav-icon">↺</span>錯題</button></nav></div>
+        <div class="ds-navigation-demo"><nav class="desktop-navigation" aria-label="桌機導覽示範"><button class="nav-item" type="button"><span class="nav-icon">⌂</span>首頁</button><button class="nav-item" type="button"><span class="nav-icon">日</span>複習計畫</button><button class="nav-item is-active" type="button"><span class="nav-icon">▦</span>五科學習</button><button class="nav-item" type="button"><span class="nav-icon">↺</span>錯題</button></nav></div>
       </div>
     </section>
 
     <section id="bottom-navigation-spec" class="ds-section">
-      <div class="ds-section-heading"><h2>Bottom Navigation</h2><p>手機版固定於畫面下方，保留三個最常用入口；文字與符號同時顯示，單手也容易點選。</p></div>
-      <div class="ds-canvas"><nav class="bottom-navigation bottom-navigation-demo" aria-label="手機底部導覽示範"><button class="bottom-nav-item" type="button"><span>⌂</span><small>首頁</small></button><button class="bottom-nav-item is-active" type="button"><span>▦</span><small>五科</small></button><button class="bottom-nav-item" type="button"><span>↺</span><small>錯題</small></button></nav></div>
+      <div class="ds-section-heading"><h2>Bottom Navigation</h2><p>手機與平板固定於畫面下方，保留四個主要入口；文字與符號同時顯示，單手也容易點選。</p></div>
+      <div class="ds-canvas"><nav class="bottom-navigation bottom-navigation-demo" aria-label="手機底部導覽示範"><button class="bottom-nav-item" type="button"><span>⌂</span><small>首頁</small></button><button class="bottom-nav-item" type="button"><span>日</span><small>計畫</small></button><button class="bottom-nav-item is-active" type="button"><span>▦</span><small>五科</small></button><button class="bottom-nav-item" type="button"><span>↺</span><small>錯題</small></button></nav></div>
     </section>
   </main>
 

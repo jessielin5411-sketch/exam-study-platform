@@ -10,12 +10,13 @@
   const PROFILE_KEY = "examJourney.profile.v1";
   const LEARNING_KEY = "examMate.learning.v1";
   const WRONG_KEY = "examMate.wrongQuestions.v1";
-  const DAILY_SUBJECTS = ["chinese", "english", "math"];
+  const REVIEW_KEY = "examMate.unitReviews.v1";
+  const DAILY_SUBJECTS = ["chinese", "english", "math", "science", "social"];
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
-  // 五科內容資料：更換題目時只需修改這一區，不需要重做畫面。
-  const SUBJECTS = {
+  // 舊版小型題庫作為備援；正式內容集中在 question-bank.js。
+  const LEGACY_SUBJECTS = {
     chinese: {
       id: "chinese", name: "國文", glyph: "文", theme: "chinese",
       description: "閱讀、語文與文字理解",
@@ -160,10 +161,15 @@
     }
   };
 
+  const SUBJECTS = window.examMateQuestionBank || LEGACY_SUBJECTS;
+  const UNIT_REVIEWS = window.examMateUnitReviews || {};
+
   const state = {
     currentView: "dashboard",
     currentSubjectId: "chinese",
+    currentUnitId: null,
     progress: { date: todayKey(), completedSubjects: [] },
+    reviewedUnits: [],
     wrongQuestions: [],
     practice: null,
     toastTimer: null
@@ -205,6 +211,10 @@
     return Array.isArray(value) && value.every((item) => item && typeof item.questionId === "string" && SUBJECTS[item.subjectId]);
   }
 
+  function validReviewedUnits(value) {
+    return Array.isArray(value) && value.every((item) => typeof item === "string");
+  }
+
   function loadLearningState() {
     state.progress = readJson(LEARNING_KEY, { date: todayKey(), completedSubjects: [] }, validProgress);
     if (state.progress.date !== todayKey()) {
@@ -212,7 +222,13 @@
       writeJson(LEARNING_KEY, state.progress);
     }
     state.progress.completedSubjects = state.progress.completedSubjects.filter((id) => DAILY_SUBJECTS.includes(id));
+    state.reviewedUnits = readJson(REVIEW_KEY, [], validReviewedUnits).filter((unitId) => Boolean(UNIT_REVIEWS[unitId]));
     state.wrongQuestions = readJson(WRONG_KEY, [], validWrongQuestions);
+    const existingWrongQuestions = state.wrongQuestions.filter((item) => findQuestion(item.subjectId, item.questionId));
+    if (existingWrongQuestions.length !== state.wrongQuestions.length) {
+      state.wrongQuestions = existingWrongQuestions;
+      writeJson(WRONG_KEY, state.wrongQuestions);
+    }
   }
 
   function enableLearningApp() {
@@ -227,13 +243,49 @@
     if (!toast) return;
     window.clearTimeout(state.toastTimer);
     toast.textContent = message;
-    toast.style.background = isError ? "#b93649" : "#0b1738";
+    toast.style.background = isError ? "#a84f59" : "#365759";
     toast.classList.add("show");
     state.toastTimer = window.setTimeout(() => toast.classList.remove("show"), 2800);
   }
 
   function escapeHtml(value) {
     return String(value).replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
+  }
+
+  // 將題目的表格、長條圖、流程與時間軸轉成可閱讀的 HTML。
+  // 圖像資料都放在題庫中，未來新增題目時不必修改畫面程式。
+  function renderQuestionVisual(visual) {
+    if (!visual || typeof visual !== "object") return "";
+    const title = visual.title ? `<figcaption>${escapeHtml(visual.title)}</figcaption>` : "";
+
+    if (visual.type === "table") {
+      const columns = Array.isArray(visual.columns) ? visual.columns : [];
+      const rows = Array.isArray(visual.rows) ? visual.rows : [];
+      return `<figure class="question-visual question-table-visual">${title}<div class="question-table-scroll"><table><thead><tr>${columns.map((column) => `<th scope="col">${escapeHtml(column)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell, index) => `<${index === 0 ? "th scope=\"row\"" : "td"}>${escapeHtml(cell)}</${index === 0 ? "th" : "td"}>`).join("")}</tr>`).join("")}</tbody></table></div></figure>`;
+    }
+
+    if (visual.type === "bar") {
+      const items = Array.isArray(visual.items) ? visual.items : [];
+      const max = Math.max(1, ...items.map((item) => Number(item.value) || 0));
+      return `<figure class="question-visual question-bar-visual">${title}<div class="question-bars">${items.map((item) => `<div class="question-bar-row"><span>${escapeHtml(item.label)}</span><div class="question-bar-track"><i style="width:${Math.max(4, (Number(item.value) || 0) / max * 100)}%"></i></div><strong>${escapeHtml(item.display ?? item.value)}</strong></div>`).join("")}</div></figure>`;
+    }
+
+    if (visual.type === "timeline") {
+      const items = Array.isArray(visual.items) ? visual.items : [];
+      return `<figure class="question-visual question-timeline-visual">${title}<ol>${items.map((item) => `<li><strong>${escapeHtml(item.label)}</strong><span>${escapeHtml(item.detail)}</span></li>`).join("")}</ol></figure>`;
+    }
+
+    if (visual.type === "flow") {
+      const steps = Array.isArray(visual.steps) ? visual.steps : [];
+      return `<figure class="question-visual question-flow-visual">${title}<div>${steps.map((step, index) => `<span>${escapeHtml(step)}</span>${index < steps.length - 1 ? `<b aria-hidden="true">→</b>` : ""}`).join("")}</div></figure>`;
+    }
+
+    if (visual.type === "cards") {
+      const items = Array.isArray(visual.items) ? visual.items : [];
+      return `<figure class="question-visual question-card-visual">${title}<div>${items.map((item) => `<article><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong>${item.note ? `<small>${escapeHtml(item.note)}</small>` : ""}</article>`).join("")}</div></figure>`;
+    }
+
+    return "";
   }
 
   function setActiveNavigation(viewName) {
@@ -248,13 +300,20 @@
 
   function goToView(viewName) {
     if (!hasProfile()) return;
-    ["dashboard-view", "subjects-view", "subject-view", "practice-view", "wrong-view"].forEach((id) => {
+    ["dashboard-view", "plan-view", "subjects-view", "subject-view", "unit-review-view", "practice-view", "wrong-view"].forEach((id) => {
       const view = $("#" + id);
       if (view) view.hidden = true;
     });
     $("#setup-view").hidden = true;
 
-    if (viewName === "dashboard") $("#dashboard-view").hidden = false;
+    if (viewName === "dashboard") {
+      $("#dashboard-view").hidden = false;
+      window.ExamMateWeeklyPlanReminder?.check();
+    }
+    if (viewName === "plan") {
+      $("#plan-view").hidden = false;
+      window.ExamMateStudyPlan?.render();
+    }
     if (viewName === "subjects") {
       $("#subjects-view").hidden = false;
       renderLearningOverview();
@@ -263,14 +322,19 @@
       $("#subject-view").hidden = false;
       renderSubjectPage(state.currentSubjectId);
     }
+    if (viewName === "unit-review") {
+      $("#unit-review-view").hidden = false;
+      renderUnitReviewPage(state.currentSubjectId, state.currentUnitId);
+    }
     if (viewName === "practice") $("#practice-view").hidden = false;
     if (viewName === "wrong") {
       $("#wrong-view").hidden = false;
       renderWrongQuestions();
+      window.ExamMateDigitalNotebook?.render();
     }
 
     state.currentView = viewName;
-    setActiveNavigation(viewName === "subject" || viewName === "practice" ? "subjects" : viewName);
+    setActiveNavigation(viewName === "subject" || viewName === "unit-review" || viewName === "practice" ? "subjects" : viewName);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -278,7 +342,7 @@
     loadLearningState();
     const completedCount = state.progress.completedSubjects.length;
     $("#daily-completed-count").textContent = String(completedCount);
-    $("#daily-progress-bar").style.width = `${Math.round(completedCount / 3 * 100)}%`;
+    $("#daily-progress-bar").style.width = `${Math.round(completedCount / DAILY_SUBJECTS.length * 100)}%`;
     $("#daily-progress-bar").parentElement.setAttribute("aria-valuenow", String(completedCount));
 
     $("#daily-task-grid").innerHTML = DAILY_SUBJECTS.map((id) => {
@@ -297,11 +361,10 @@
     }).join("");
 
     $("#subject-card-grid").innerHTML = Object.values(SUBJECTS).map((subject) => {
-      const daily = DAILY_SUBJECTS.includes(subject.id);
       return `<button class="subject-card" type="button" data-subject-theme="${subject.theme}" data-open-subject="${subject.id}">
         <span class="subject-glyph" aria-hidden="true">${subject.glyph}</span>
         <h3>${subject.name}</h3>
-        <p>${subject.description}<br>${subject.units.length} 個示範單元・${daily ? "每日任務" : "自由練習"}</p>
+        <p>${subject.description}<br>${subject.units.length} 個單元・${subject.questions.length} 題原創題庫</p>
         <span class="subject-card-arrow" aria-hidden="true">→</span>
       </button>`;
     }).join("");
@@ -315,25 +378,140 @@
 
   function renderSubjectPage(subjectId) {
     const subject = SUBJECTS[subjectId];
-    const isDaily = DAILY_SUBJECTS.includes(subjectId);
+    const isDaily = true;
     const completed = state.progress.completedSubjects.includes(subjectId);
     $("#subject-page-content").innerHTML = `
       <section class="subject-hero" data-subject-theme="${subject.theme}">
         <span class="subject-glyph" aria-hidden="true">${subject.glyph}</span>
-        <div><p class="section-label">${isDaily ? "DAILY SUBJECT" : "FREE PRACTICE"}</p><h1 id="subject-page-title">${subject.name}</h1><p>${subject.description}，每次只專注一小步。</p></div>
-        <div class="subject-summary"><span>今日狀態</span><strong>${completed ? "已完成" : isDaily ? "待完成" : "自由練習"}</strong></div>
+        <div><p class="section-label">DAILY SUBJECT</p><h1 id="subject-page-title">${subject.name}</h1><p>${subject.description}，先看重點，再用題目確認理解。</p></div>
+        <div class="subject-summary"><span>今日狀態</span><strong>${completed ? "已完成" : "待完成"}</strong></div>
       </section>
-      <article class="subject-task-card" data-subject-theme="${subject.theme}">
-        <span class="subject-glyph" aria-hidden="true">${completed ? "✓" : subject.glyph}</span>
-        <div><h2>${isDaily ? `${subject.name}今日任務` : `${subject.name}綜合練習`}</h2><p>${subject.questions.length} 題示範題・答題後立即解析${isDaily ? "・完成後更新首頁紀錄" : ""}</p></div>
-        <div><span class="time-chip">◷ 約 ${isDaily ? 10 : 5} 分鐘</span><button class="button button-primary" type="button" data-start-mixed="${subjectId}">${completed ? "再練一次" : "開始練習"}</button></div>
-      </article>
+      <div class="subject-action-grid">
+        <article class="subject-task-card" data-subject-theme="${subject.theme}">
+          <span class="subject-glyph" aria-hidden="true">${completed ? "✓" : subject.glyph}</span>
+          <div><h2>${subject.name}今日任務</h2><p>每日精選 3 題・完成後更新今日紀錄</p></div>
+          <div><span class="time-chip">◷ 約 10 分鐘</span><button class="button button-primary" type="button" data-start-mixed="${subjectId}">${completed ? "再練一次" : "開始練習"}</button></div>
+        </article>
+        <article class="subject-task-card subject-bank-card" data-subject-theme="${subject.theme}">
+          <span class="subject-glyph" aria-hidden="true">題</span>
+          <div><h2>會考實戰 10 題</h2><p>從 ${subject.questions.length} 題題庫選取中高難度題・包含圖表、情境與推論</p></div>
+          <div><span class="time-chip">◷ 約 25 分鐘</span><button class="button button-secondary" type="button" data-start-bank="${subjectId}">開始實戰</button></div>
+        </article>
+      </div>
       <section class="component-section" aria-labelledby="unit-list-title">
-        <div class="section-heading compact-heading"><div><p class="section-label">UNIT LIST</p><h2 id="unit-list-title">單元列表</h2></div><p class="section-support">點選單元進行 1 題快速練習</p></div>
-        <div class="unit-list">
-          ${subject.units.map((unit, index) => `<button class="unit-card" type="button" data-start-unit="${index}" data-subject-theme="${subject.theme}"><span class="unit-number">${String(index + 1).padStart(2, "0")}</span><span><strong>${escapeHtml(unit)}</strong><small>1 題・立即解析</small></span></button>`).join("")}
+        <div class="section-heading compact-heading"><div><p class="section-label">UNIT REVIEW</p><h2 id="unit-list-title">單元重點複習</h2></div><p class="section-support">先看三個重點，再開始單元練習</p></div>
+        <div class="unit-review-list">
+          ${subject.units.map((unit, index) => {
+            const unitQuestions = subject.questions.filter((question) => question.unitId === unit.id || question.unit === unit.name);
+            const reviewed = state.reviewedUnits.includes(unit.id);
+            const hasHandbook = Boolean(UNIT_REVIEWS[unit.id]?.handbook);
+            return `<details class="unit-review-card" data-subject-theme="${subject.theme}" ${index === 0 ? "open" : ""}>
+              <summary><span class="unit-number">${reviewed ? "✓" : String(index + 1).padStart(2, "0")}</span><span><strong>${escapeHtml(unit.name || unit)}</strong><small>${reviewed ? "會考整理已閱讀" : hasHandbook ? "完整會考講義" : "約 5 分鐘整理"}・${unitQuestions.length} 題練習</small></span><span class="review-toggle" aria-hidden="true">＋</span></summary>
+              <div class="unit-review-content"><p class="review-label">考前先記住</p><ul>${(unit.review || ["理解核心概念", "讀題時找出關鍵條件", "作答後檢查錯誤原因"]).map((point) => `<li>${escapeHtml(point)}</li>`).join("")}</ul><div class="unit-card-actions"><button class="button button-primary button-small" type="button" data-open-unit-review="${escapeHtml(unit.id || String(index))}">${reviewed ? "再次複習整理" : "先看會考整理"}</button><button class="button button-secondary button-small" type="button" data-start-unit="${escapeHtml(unit.id || String(index))}">直接測驗</button></div></div>
+            </details>`;
+          }).join("")}
         </div>
       </section>`;
+  }
+
+  function openUnitReview(unitId) {
+    const subject = SUBJECTS[state.currentSubjectId];
+    const unit = subject?.units.find((item) => item.id === unitId);
+    if (!unit || !UNIT_REVIEWS[unitId]) return;
+    state.currentUnitId = unitId;
+    goToView("unit-review");
+  }
+
+  function renderReviewList(items, ordered = false) {
+    const tag = ordered ? "ol" : "ul";
+    return `<${tag}>${(items || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</${tag}>`;
+  }
+
+  function renderSubjectHandbook(handbook, subject) {
+    if (!handbook) return "";
+    const comparison = handbook.comparison || {};
+    const worked = handbook.workedExample || {};
+    const isEnglish = subject?.id === "english";
+    return `<section class="handbook-deep-dive">
+      <div class="handbook-heading"><div><p class="section-label">${isEnglish ? "ENGLISH CAP HANDBOOK" : "CHINESE CAP HANDBOOK"}</p><h2>${isEnglish ? "英文會考講義" : "國文會考講義"}</h2></div><span>理解型整理・不是死背清單</span></div>
+      <div class="handbook-focus-grid">${(handbook.focus || []).map((item, index) => `<article><b>${index + 1}</b><p>${escapeHtml(item)}</p></article>`).join("")}</div>
+      ${comparison.rows?.length ? `<figure class="handbook-comparison"><figcaption>${escapeHtml(comparison.title || "必會比較表")}</figcaption><div class="question-table-scroll"><table><thead><tr>${(comparison.columns || []).map((item) => `<th>${escapeHtml(item)}</th>`).join("")}</tr></thead><tbody>${comparison.rows.map((row) => `<tr>${row.map((cell, index) => `<${index === 0 ? "th scope=\"row\"" : "td"}>${escapeHtml(cell)}</${index === 0 ? "th" : "td"}>`).join("")}</tr>`).join("")}</tbody></table></div></figure>` : ""}
+      <article class="handbook-worked-example"><div class="handbook-example-title"><span aria-hidden="true">例</span><div><p class="section-label">WORKED EXAMPLE</p><h3>會考例題拆解</h3></div></div><p class="handbook-example-prompt">${escapeHtml(worked.prompt || "")}</p>${renderReviewList(worked.steps || [], true)}<div class="handbook-answer"><strong>答案</strong><span>${escapeHtml(worked.answer || "")}</span></div></article>
+      <aside class="handbook-memory-tip"><strong>${isEnglish ? "老師的解題提醒" : "老師的記憶提示"}</strong><p>${escapeHtml(handbook.memoryTip || "")}</p></aside>
+    </section>`;
+  }
+
+  function renderUnitReviewPage(subjectId, unitId) {
+    const subject = SUBJECTS[subjectId];
+    const unit = subject?.units.find((item) => item.id === unitId);
+    const review = UNIT_REVIEWS[unitId];
+    if (!subject || !unit || !review) return goToView("subject");
+    const unitQuestions = subject.questions.filter((question) => question.unitId === unitId || question.unit === unit.name);
+    const reviewed = state.reviewedUnits.includes(unitId);
+    $("#unit-review-content").innerHTML = `
+      <section class="review-lesson-hero" data-subject-theme="${subject.theme}">
+        <div><p class="section-label">CAP UNIT REVIEW・${escapeHtml(subject.name)}</p><h1 id="unit-review-title">${escapeHtml(unit.name)}會考整理</h1><p>${escapeHtml(review.summary)}</p></div>
+        <div class="review-duration"><span aria-hidden="true">◎</span><strong>約 5 分鐘</strong><small>${reviewed ? "已閱讀，可再次複習" : "先理解，再測驗"}</small></div>
+      </section>
+      <nav class="review-learning-path" aria-label="單元學習流程" data-subject-theme="${subject.theme}">
+        <span class="is-current"><b>1</b>重點整理</span><i aria-hidden="true">→</i><span><b>2</b>解題策略</span><i aria-hidden="true">→</i><span><b>3</b>${unitQuestions.length} 題測驗</span>
+      </nav>
+      ${renderSubjectHandbook(review.handbook, subject)}
+      <div class="review-content-grid" data-subject-theme="${subject.theme}">
+        <article class="review-knowledge-card review-card-wide"><div class="review-card-icon" aria-hidden="true">核</div><div><p class="section-label">MUST KNOW</p><h2>核心必會觀念</h2>${renderReviewList(review.mustKnow)}</div></article>
+        <article class="review-knowledge-card"><div class="review-card-icon" aria-hidden="true">考</div><div><p class="section-label">HOW IT APPEARS</p><h2>會考怎麼考</h2>${renderReviewList(review.examPatterns)}</div></article>
+        <article class="review-knowledge-card"><div class="review-card-icon" aria-hidden="true">解</div><div><p class="section-label">SOLVE IT</p><h2>穩定解題步驟</h2>${renderReviewList(review.strategy, true)}</div></article>
+        <article class="review-knowledge-card review-trap-card"><div class="review-card-icon" aria-hidden="true">!</div><div><p class="section-label">COMMON TRAPS</p><h2>會考常見陷阱</h2>${renderReviewList(review.traps)}</div></article>
+        <article class="review-example-card review-card-wide">
+          <div><p class="section-label">QUICK CHECK</p><h2>30 秒觀念檢核</h2><p>${escapeHtml(review.example?.question || "請用自己的話說出本單元最重要的觀念。")}</p></div>
+          <details><summary>看答案與提醒</summary><p>${escapeHtml(review.example?.answer || "能說出觀念與理由，才是真正理解。")}</p></details>
+        </article>
+      </div>
+      <section class="review-ready-panel" data-subject-theme="${subject.theme}">
+        <div><span class="review-ready-mark" aria-hidden="true">✓</span><div><h2>整理完成，現在用題目確認理解</h2><p>測驗後會立即解析；答錯的題目會自動加入錯題本。</p></div></div>
+        <button class="button button-primary" type="button" data-start-reviewed-unit="${escapeHtml(unitId)}">我讀完了，開始 ${unitQuestions.length} 題測驗</button>
+      </section>`;
+  }
+
+  function markUnitReviewed(unitId) {
+    if (!state.reviewedUnits.includes(unitId)) {
+      state.reviewedUnits.push(unitId);
+      writeJson(REVIEW_KEY, state.reviewedUnits);
+    }
+  }
+
+  // 同一天、同一科會得到固定的三題；優先安排難度 3、4、5 各一題。
+  function getDailyQuestions(subject) {
+    if (subject.questions.length <= 3) return [...subject.questions];
+    const seedText = `${todayKey()}-${subject.id}`;
+    const seed = Array.from(seedText).reduce((total, char) => total + char.charCodeAt(0), 0);
+    const picked = [];
+    [3, 4, 5].forEach((difficulty, index) => {
+      const capCandidates = subject.questions.filter((question) => question.level === "cap" && Number(question.difficulty) === difficulty && !picked.includes(question));
+      const otherCapCandidates = subject.questions
+        .filter((question) => question.level === "cap" && !picked.includes(question))
+        .sort((a, b) => Math.abs(Number(a.difficulty) - difficulty) - Math.abs(Number(b.difficulty) - difficulty));
+      const candidates = capCandidates.length ? capCandidates : otherCapCandidates.length
+        ? otherCapCandidates
+        : subject.questions.filter((question) => Number(question.difficulty) === difficulty && !picked.includes(question));
+      if (candidates.length) picked.push(candidates[(seed + index * 7) % candidates.length]);
+    });
+    const fallback = subject.questions.filter((question) => !picked.includes(question) && Number(question.difficulty) >= 3);
+    while (picked.length < 3 && fallback.length) picked.push(fallback[(seed + picked.length * 11) % fallback.length]);
+    return picked.slice(0, 3);
+  }
+
+  function getRandomQuestions(subject, count, examMode = false) {
+    const capPool = subject.questions.filter((question) => question.level === "cap");
+    const pool = examMode && capPool.length >= count ? capPool : examMode
+      ? subject.questions.filter((question) => Number(question.difficulty) >= 4)
+      : subject.questions;
+    const questions = [...(pool.length >= count ? pool : subject.questions)];
+    for (let index = questions.length - 1; index > 0; index -= 1) {
+      const randomIndex = Math.floor(Math.random() * (index + 1));
+      [questions[index], questions[randomIndex]] = [questions[randomIndex], questions[index]];
+    }
+    return questions.slice(0, Math.min(count, questions.length));
   }
 
   function startPractice(subjectId, questions, dailyMode, sourceView) {
@@ -359,6 +537,7 @@
   function renderPracticeQuestion() {
     const practice = state.practice;
     if (!practice) return;
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     const subject = SUBJECTS[practice.subjectId];
     const question = practice.questions[practice.index];
     const total = practice.questions.length;
@@ -371,8 +550,14 @@
     $("#practice-progress-bar").parentElement.setAttribute("aria-valuenow", String(progressPercent));
 
     $("#practice-card-host").innerHTML = `<article class="practice-card" data-subject-theme="${subject.theme}">
-      <div class="practice-card-head"><span class="status-badge">單選題</span><span class="practice-hint">選好答案後再確認</span></div>
-      ${question.context ? `<div class="question-context">${escapeHtml(question.context)}</div>` : ""}
+      <div class="practice-card-head"><div class="question-badges"><span class="status-badge">${question.level === "cap" ? "會考素養題" : "單選題"}</span><span class="status-badge difficulty-badge">難度 ${question.difficulty || 2}／5</span>${question.visual ? `<span class="status-badge visual-badge">圖表題</span>` : ""}</div><span class="practice-hint">選好答案後再確認</span></div>
+      ${question.ability ? `<p class="ability-label">能力：${escapeHtml(question.ability)}</p>` : ""}
+      ${question.audioText ? `<section class="listening-player" aria-label="英文聽力播放器">
+        <div class="listening-player-copy"><span class="listening-wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div><strong>先聽再作答</strong><small>可重播，建議先不要看逐字稿</small></div></div>
+        ${question.audioSrc ? `<audio class="listening-audio" controls preload="metadata" aria-label="播放英文聽力內容"><source src="${escapeHtml(question.audioSrc)}" type="audio/wav">目前瀏覽器無法播放此音檔。</audio>` : `<button class="button button-primary button-small" type="button" data-play-listening>▶ 播放聽力</button>`}
+        <details class="listening-transcript"><summary>聽不清楚？顯示逐字稿</summary><p>${escapeHtml(question.transcript || question.audioText)}</p></details>
+      </section>` : question.context ? `<div class="question-context">${escapeHtml(question.context)}</div>` : ""}
+      ${renderQuestionVisual(question.visual)}
       <h1>${escapeHtml(question.prompt)}</h1>
       <div class="option-list" role="group" aria-label="答案選項">
         ${question.options.map((option, index) => `<button class="option-button" type="button" data-answer-index="${index}" aria-pressed="false"><span class="option-letter">${String.fromCharCode(65 + index)}</span><span>${escapeHtml(option)}</span></button>`).join("")}
@@ -412,6 +597,7 @@
     $("#answer-dialog-title").textContent = isCorrect ? "答對了！" : "這題先收進錯題本";
     $("#answer-dialog-answer").textContent = `正確答案：${String.fromCharCode(65 + question.answer)}．${question.options[question.answer]}`;
     $("#answer-dialog-explanation").textContent = question.explanation;
+    $("#answer-dialog-error").textContent = question.commonError ? `常見錯誤：${question.commonError}` : "";
     $("#answer-next-button").textContent = practice.index === practice.questions.length - 1 ? "查看完成結果" : "下一題";
     if (typeof dialog.showModal === "function") dialog.showModal(); else dialog.setAttribute("open", "");
   }
@@ -448,7 +634,14 @@
 
   function finishPractice() {
     const practice = state.practice;
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     const subject = SUBJECTS[practice.subjectId];
+    const scoreRate = practice.questions.length ? practice.correctCount / practice.questions.length : 0;
+    const reviewFeedback = scoreRate >= 0.8
+      ? "這個單元已掌握得很穩，之後可從錯題本做間隔複習。"
+      : scoreRate >= 0.6
+        ? "已經掌握大部分觀念，建議再看一次常見陷阱後重答錯題。"
+        : "先不用急著刷更多題，回到單元整理重新理解核心觀念會更有效。";
     if (practice.dailyMode && DAILY_SUBJECTS.includes(practice.subjectId)) markDailyComplete(practice.subjectId);
     $("#practice-progress-bar").style.width = "100%";
     $("#practice-progress-bar").parentElement.setAttribute("aria-valuenow", "100");
@@ -457,13 +650,14 @@
       <div class="completion-mark" aria-hidden="true">✓</div>
       <p class="section-label">MISSION COMPLETE</p>
       <h1>${subject.name}${practice.dailyMode ? "今日任務" : "練習"}完成！</h1>
-      <p>${practice.dailyMode ? "今天的進度已經記下來，穩定完成比一次做很多更重要。" : "你完成了一次快速練習，答錯的題目也已經收進錯題本。"}</p>
+      <p>${practice.dailyMode ? "今天的進度已經記下來，穩定完成比一次做很多更重要。" : practice.sourceView === "unit-review" ? reviewFeedback : "你完成了一次快速練習，答錯的題目也已經收進錯題本。"}</p>
       <div class="completion-stats">
         <div class="completion-stat"><strong>${practice.questions.length}</strong><span>完成題數</span></div>
         <div class="completion-stat"><strong>${practice.correctCount}</strong><span>答對題數</span></div>
         <div class="completion-stat"><strong>${practice.wrongCount}</strong><span>加入錯題</span></div>
       </div>
       <div class="completion-actions">
+        ${practice.sourceView === "unit-review" ? `<button class="button button-secondary" type="button" data-completion-view="unit-review">回到整理再複習</button>` : ""}
         <button class="button button-secondary" type="button" data-completion-view="subjects">返回五科學習</button>
         <button class="button button-primary" type="button" data-completion-view="dashboard">完成今天，返回首頁</button>
       </div>
@@ -484,6 +678,7 @@
   function renderWrongQuestions() {
     loadLearningState();
     $("#wrong-count-badge").textContent = `${state.wrongQuestions.length} 題`;
+    if ($("#wrong-bank-summary")) $("#wrong-bank-summary").textContent = `${state.wrongQuestions.length} 題由系統自動整理`;
     const host = $("#wrong-question-list");
     if (!state.wrongQuestions.length) {
       host.innerHTML = `<div class="empty-state"><span class="empty-state-icon" aria-hidden="true">✓</span><h2>目前沒有待複習的錯題</h2><p>開始五科練習後，答錯的題目會自動出現在這裡，不需要自己整理。</p><button class="button button-primary" type="button" data-app-view="subjects">前往五科學習</button></div>`;
@@ -496,7 +691,9 @@
       return `<article class="wrong-question-card" data-subject-theme="${subject.theme}">
         <div class="wrong-card-head"><div class="subject-identity"><span class="subject-glyph" aria-hidden="true">${subject.glyph}</span><strong>${subject.name}・${escapeHtml(question.unit)}</strong></div><span class="status-badge">答錯 ${item.wrongCount} 次</span></div>
         <h3>${escapeHtml(question.prompt)}</h3>
+        ${question.ability ? `<p class="wrong-ability"><strong>能力：</strong>${escapeHtml(question.ability)}</p>` : ""}
         <p><strong>觀念提醒：</strong>${escapeHtml(question.explanation)}</p>
+        ${question.commonError ? `<p class="wrong-common-error"><strong>常見錯誤：</strong>${escapeHtml(question.commonError)}</p>` : ""}
         <div class="wrong-card-actions"><button class="button button-secondary button-small" type="button" data-mastered-question="${question.id}" data-mastered-subject="${subject.id}">標記已掌握</button><button class="button button-primary button-small" type="button" data-retry-question="${question.id}" data-retry-subject="${subject.id}">再答一次</button></div>
       </article>`;
     }).join("");
@@ -516,7 +713,8 @@
   }
 
   function confirmLeavePractice() {
-    const source = state.practice?.sourceView === "wrong" ? "wrong" : "subject";
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    const source = state.practice?.sourceView === "wrong" ? "wrong" : state.practice?.sourceView === "unit-review" ? "unit-review" : "subject";
     state.practice = null;
     $("#leave-practice-dialog").close();
     goToView(source);
@@ -532,21 +730,54 @@
     const open = event.target.closest("[data-open-subject]");
     if (open) return openSubject(open.dataset.openSubject);
 
+    const openReview = event.target.closest("[data-open-unit-review]");
+    if (openReview) return openUnitReview(openReview.dataset.openUnitReview);
+
     const mixed = event.target.closest("[data-start-mixed]");
     if (mixed) {
       const subjectId = mixed.dataset.startMixed;
-      return startPractice(subjectId, SUBJECTS[subjectId].questions, DAILY_SUBJECTS.includes(subjectId), "subject");
+      return startPractice(subjectId, getDailyQuestions(SUBJECTS[subjectId]), true, "subject");
     }
 
     const unit = event.target.closest("[data-start-unit]");
     if (unit) {
       const subject = SUBJECTS[state.currentSubjectId];
-      const question = subject.questions[Number(unit.dataset.startUnit)];
-      return startPractice(subject.id, [question], false, "subject");
+      const unitQuestions = subject.questions.filter((question, index) => question.unitId === unit.dataset.startUnit || String(index) === unit.dataset.startUnit);
+      return startPractice(subject.id, unitQuestions, false, "subject");
+    }
+
+    const reviewedUnit = event.target.closest("[data-start-reviewed-unit]");
+    if (reviewedUnit) {
+      const unitId = reviewedUnit.dataset.startReviewedUnit;
+      const subject = SUBJECTS[state.currentSubjectId];
+      const unitInfo = subject.units.find((item) => item.id === unitId);
+      const unitQuestions = subject.questions.filter((question) => question.unitId === unitId || question.unit === unitInfo?.name);
+      markUnitReviewed(unitId);
+      return startPractice(subject.id, unitQuestions, false, "unit-review");
+    }
+
+    const bankPractice = event.target.closest("[data-start-bank]");
+    if (bankPractice) {
+      const subjectId = bankPractice.dataset.startBank;
+      return startPractice(subjectId, getRandomQuestions(SUBJECTS[subjectId], 10, true), false, "subject");
     }
 
     const option = event.target.closest("[data-answer-index]");
     if (option) return selectAnswer(Number(option.dataset.answerIndex));
+    if (event.target.closest("[data-play-listening]")) {
+      const question = state.practice?.questions[state.practice.index];
+      if (!question?.audioText) return;
+      if (!("speechSynthesis" in window)) {
+        notify("目前瀏覽器無法播放語音，請展開逐字稿完成練習。");
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new window.SpeechSynthesisUtterance(question.audioText);
+      utterance.lang = "en-US";
+      utterance.rate = 0.86;
+      window.speechSynthesis.speak(utterance);
+      return;
+    }
     if (event.target.closest("#submit-answer-button")) return submitAnswer();
 
     const mastered = event.target.closest("[data-mastered-question]");
@@ -586,5 +817,6 @@
     enableLearningApp();
   }
 
+  window.ExamMateLearning = { renderWrongQuestions, goToView };
   document.addEventListener("DOMContentLoaded", initLearning);
 })();

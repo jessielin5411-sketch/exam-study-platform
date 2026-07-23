@@ -5,7 +5,15 @@
   const STORAGE_KEYS = {
     profile: "examJourney.profile.v1",
     events: "examJourney.events.v1",
-    dailyGoal: "examJourney.dailyGoal.v1"
+    dailyGoal: "examJourney.dailyGoal.v1",
+    learning: "examMate.learning.v1",
+    wrongQuestions: "examMate.wrongQuestions.v1",
+    unitReviews: "examMate.unitReviews.v1",
+    studyPlan: "examMate.studyPlan.v1",
+    digitalWrongNotebook: "examMate.digitalWrongNotebook.v1",
+    weeklyPlanPrompt: "examMate.weeklyPlanPrompt.v1",
+    appearance: "examMate.appearance.v1",
+    backupMeta: "examMate.backupMeta.v1"
   };
   const DAY_MS = 24 * 60 * 60 * 1000;
   const state = { profile: null, events: [], editingProfile: false, toastTimer: null, reminderIndex: 0 };
@@ -39,6 +47,22 @@
     const rocYear = date.getFullYear() - 1911;
     const weekday = withWeekday ? ` ${new Intl.DateTimeFormat("zh-TW", { weekday: "short" }).format(date)}` : "";
     return `民國${rocYear}年${date.getMonth() + 1}月${date.getDate()}日${weekday}`;
+  }
+
+  function formatDateRange(startValue, endValue) {
+    const start = parseLocalDate(startValue);
+    const end = parseLocalDate(endValue);
+    if (!start) return "日期格式錯誤";
+    if (!end || start.getTime() === end.getTime()) return formatDate(start);
+    const startWeekday = new Intl.DateTimeFormat("zh-TW", { weekday: "short" }).format(start);
+    const endWeekday = new Intl.DateTimeFormat("zh-TW", { weekday: "short" }).format(end);
+    const startRocYear = start.getFullYear() - 1911;
+    const endRocYear = end.getFullYear() - 1911;
+    const startCopy = `民國${startRocYear}年${start.getMonth() + 1}月${start.getDate()}日 ${startWeekday}`;
+    const endCopy = startRocYear === endRocYear
+      ? `${end.getMonth() + 1}月${end.getDate()}日 ${endWeekday}`
+      : `民國${endRocYear}年${end.getMonth() + 1}月${end.getDate()}日 ${endWeekday}`;
+    return `${startCopy}－${endCopy}`;
   }
 
   function toRocDateString(value) {
@@ -107,7 +131,7 @@
   function showToast(message, isError = false) {
     clearTimeout(state.toastTimer);
     elements.toast.textContent = message;
-    elements.toast.style.background = isError ? "#b93649" : "#0b1738";
+    elements.toast.style.background = isError ? "#a84f59" : "#365759";
     elements.toast.classList.add("show");
     state.toastTimer = setTimeout(() => elements.toast.classList.remove("show"), 2800);
   }
@@ -153,6 +177,7 @@
     elements.setupView.hidden = true;
     elements.dashboardView.hidden = false;
     renderDashboard();
+    window.ExamMateWeeklyPlanReminder?.check();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -228,7 +253,8 @@
   function getAllEvents() {
     const config = getExamYearConfig();
     const builtIn = config ? config.mockExams.map((exam, index) => ({
-      id: `mock-${index + 1}`, name: exam.name, date: exam.date, type: "模擬考", note: exam.reminder, builtIn: true, order: index
+      id: `mock-${index + 1}`, name: exam.name, date: exam.date, endDate: exam.endDate || exam.date,
+      type: "模擬考", note: exam.reminder, builtIn: true, order: index
     })) : [];
     return [...builtIn, ...state.events.map((event) => ({ ...event, builtIn: false }))]
       .filter((event) => parseLocalDate(event.date))
@@ -288,11 +314,12 @@
     const events = getAllEvents();
     elements.examCards.innerHTML = events.map((event, index) => {
       const date = parseLocalDate(event.date);
-      const ended = date < today;
+      const endDate = parseLocalDate(event.endDate) || date;
+      const ended = endDate < today;
       const days = getCalendarDays(date, today);
       return `<article class="exam-card ${event.builtIn ? "" : "custom"} ${ended ? "ended" : ""}">
         <div class="card-topline"><span class="${ended ? "ended-badge" : "exam-type"}">${ended ? "已結束" : escapeHtml(event.type)}</span><span class="exam-index">${String(index + 1).padStart(2, "0")}</span></div>
-        <h3>${escapeHtml(event.name)}</h3><p class="exam-date">${escapeHtml(formatDate(event.date))}</p>
+        <h3>${escapeHtml(event.name)}</h3><p class="exam-date">${escapeHtml(formatDateRange(event.date, event.endDate))}</p>
         <div class="card-count">${ended ? "<strong>已結束</strong>" : `<strong>${days}</strong><span>天後</span>`}</div>
         <p class="card-reminder">${escapeHtml(event.note || (ended ? "保留這筆紀錄，看看自己已走過的路。" : "提早安排複習範圍，留一點彈性給自己。"))}</p>
       </article>`;
@@ -302,14 +329,14 @@
 
   function updateNextExam() {
     const today = startOfToday();
-    const upcoming = getAllEvents().find((event) => parseLocalDate(event.date) >= today);
+    const upcoming = getAllEvents().find((event) => (parseLocalDate(event.endDate) || parseLocalDate(event.date)) >= today);
     if (!upcoming) {
       $("#next-exam-title").textContent = "目前沒有即將到來的考試";
       $("#next-exam-note").textContent = "新增重要日期，讓準備更有方向。";
       $("#next-exam-days").textContent = "—";
       return;
     }
-    $("#next-exam-title").textContent = `${upcoming.name} · ${formatDate(upcoming.date)}`;
+    $("#next-exam-title").textContent = `${upcoming.name} · ${formatDateRange(upcoming.date, upcoming.endDate)}`;
     $("#next-exam-note").textContent = upcoming.note || "把範圍拆小，今天先完成一個部分。";
     $("#next-exam-days").textContent = getCalendarDays(parseLocalDate(upcoming.date), today);
   }
@@ -449,6 +476,10 @@
       return;
     }
     state.profile = null; state.events = [];
+    window.ExamMateStudyPlan?.reset();
+    window.ExamMateDigitalNotebook?.reset();
+    window.ExamMateWeeklyPlanReminder?.reset();
+    window.ExamMateAppearanceBackup?.reset();
     elements.resetDialog.close();
     elements.dataAlert.hidden = true;
     elements.profileForm.reset();

@@ -134,12 +134,18 @@
         </a>
         <nav class="desktop-navigation" aria-label="主要導覽">
           <button class="nav-item is-active" type="button" data-app-view="dashboard"><span class="nav-icon" aria-hidden="true">⌂</span>首頁</button>
+          <button class="nav-item" type="button" data-app-view="plan"><span class="nav-icon" aria-hidden="true">日</span>複習計畫</button>
           <button class="nav-item" type="button" data-app-view="subjects"><span class="nav-icon" aria-hidden="true">▦</span>五科學習</button>
-          <button class="nav-item" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">↺</span>錯題</button>
+          <button class="nav-item" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">↺</span>錯題本</button>
         </nav>
-        <div class="student-chip">
-          <span class="student-avatar" id="student-avatar" aria-hidden="true">同</span>
-          <span><small>今日學習者</small><strong id="student-chip-name">同學</strong></span>
+        <div class="topbar-tools">
+          <button id="open-appearance-backup" class="appearance-backup-button" type="button" aria-haspopup="dialog">
+            <span aria-hidden="true">彩</span><strong id="current-theme-label">清爽版</strong>
+          </button>
+          <div class="student-chip">
+            <span class="student-avatar" id="student-avatar" aria-hidden="true">同</span>
+            <span><small>今日學習者</small><strong id="student-chip-name">同學</strong></span>
+          </div>
         </div>
       </header>
 
@@ -220,6 +226,22 @@
         </div>
       </section>
 
+      <section class="home-plan-card" aria-labelledby="home-plan-title">
+        <div class="home-plan-heading">
+          <div>
+            <p class="section-label">TODAY'S STUDY RHYTHM</p>
+            <h2 id="home-plan-title">今天的複習安排</h2>
+            <p id="home-plan-summary">先安排適合自己的節奏，再一步一步完成。</p>
+          </div>
+          <button class="button button-primary" type="button" data-app-view="plan">建立／調整計畫</button>
+        </div>
+        <div class="home-plan-progress">
+          <div><span>今日進度</span><strong id="home-plan-progress-copy">0／0</strong></div>
+          <div class="progress-bar progress-bar-large" role="progressbar" aria-label="今日複習計畫進度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="home-plan-progress-bar"></span></div>
+        </div>
+        <div id="home-plan-list" class="home-plan-list"></div>
+      </section>
+
       <section class="daily-goal-card" aria-labelledby="daily-goal-title">
         <div class="goal-number">01</div>
         <div class="goal-content">
@@ -243,13 +265,202 @@
       <section class="action-bar" aria-label="資料管理">
         <div>
           <h2>把這裡調整成最適合你的節奏</h2>
-          <p>資料只存在這台裝置的瀏覽器中。</p>
+          <p>資料只存在這台裝置；需要換手機或電腦時，可先下載完整備份。</p>
         </div>
         <div class="action-buttons">
+          <button id="open-data-tools" class="button button-secondary" type="button">外觀與資料備份</button>
+          <button class="button button-secondary" type="button" data-app-view="plan">管理複習計畫</button>
           <button id="edit-profile-button" class="button button-secondary" type="button">修改個人資料</button>
           <button id="open-date-manager" class="button button-primary" type="button">管理重要日期</button>
           <button id="reset-profile-button" class="button button-quiet" type="button">重新設定</button>
         </div>
+      </section>
+    </section>
+
+    <section id="plan-view" class="product-view study-plan-view" aria-labelledby="study-plan-title" hidden>
+      <header class="product-topbar">
+        <a class="brand app-home-link" href="#" data-app-view="dashboard" aria-label="回到 ExamMate 首頁">
+          <span class="brand-mark brand-mark-small" aria-hidden="true">E</span>
+          <span><strong>ExamMate</strong><small>五科自主學習平台</small></span>
+        </a>
+        <nav class="desktop-navigation" aria-label="主要導覽">
+          <button class="nav-item" type="button" data-app-view="dashboard"><span class="nav-icon" aria-hidden="true">⌂</span>首頁</button>
+          <button class="nav-item is-active" type="button" data-app-view="plan"><span class="nav-icon" aria-hidden="true">日</span>複習計畫</button>
+          <button class="nav-item" type="button" data-app-view="subjects"><span class="nav-icon" aria-hidden="true">▦</span>五科學習</button>
+          <button class="nav-item" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">↺</span>錯題本</button>
+        </nav>
+        <span class="comfort-badge">明亮陪讀模式</span>
+      </header>
+
+      <section class="plan-hero">
+        <div>
+          <p class="eyebrow">WEEKLY REVIEW PLAN</p>
+          <h1 id="study-plan-title">把生活與複習放進同一個節奏裡</h1>
+          <p>先記下每天的作息，再安排真正做得到的讀書內容。計畫不是要求完美，而是幫你知道下一步要做什麼。</p>
+          <div class="plan-hero-actions">
+            <button id="auto-plan-button" class="button button-primary" type="button">幫我安排建議計畫</button>
+            <button id="print-study-plan" class="button button-secondary" type="button"><span aria-hidden="true">▣</span>列印本週計畫</button>
+          </div>
+        </div>
+        <div class="plan-hero-stats">
+          <article><span>本週安排</span><strong id="plan-total-count">0</strong><small>個時段</small></article>
+          <article><span>今天完成</span><strong id="plan-today-count">0／0</strong><small>照自己的速度</small></article>
+        </div>
+      </section>
+
+      <div id="plan-data-alert" class="plan-data-alert" role="alert" hidden>
+        <div><strong>複習計畫資料暫時無法讀取</strong><p>其他資料不受影響，可以重新建立這份計畫。</p></div>
+        <button id="reset-plan-data" class="button button-secondary button-small" type="button">重新建立計畫</button>
+      </div>
+
+      <section class="strategy-lab" aria-labelledby="strategy-lab-title">
+        <div class="strategy-heading">
+          <div>
+            <p class="section-label">EXAMMATE REVIEW STRATEGY</p>
+            <h2 id="strategy-lab-title">不知道怎麼排？先選一個適合今天的節奏</h2>
+            <p id="personal-plan-tip">系統會參考你的每日讀書時間與需要加強的科目，提供一份可以再調整的建議。</p>
+          </div>
+          <span class="strategy-formula" aria-label="ExamMate 二加一複習節奏">
+            <b>2</b> 個專注時段 <i>＋</i> <b>1</b> 個錯題收尾
+          </span>
+        </div>
+        <div class="strategy-card-grid">
+          <article class="strategy-card strategy-gentle">
+            <span class="strategy-icon" aria-hidden="true">芽</span>
+            <p>每天 30 分鐘</p>
+            <h3>小步陪讀</h3>
+            <ul><li>20 分鐘單科重點</li><li>10 分鐘錯題或單字</li></ul>
+            <button class="button button-secondary button-small" type="button" data-apply-strategy="gentle">套用這個節奏</button>
+          </article>
+          <article class="strategy-card strategy-balanced is-recommended">
+            <span class="strategy-tag">建議</span>
+            <span class="strategy-icon" aria-hidden="true">衡</span>
+            <p>每天 60～90 分鐘</p>
+            <h3>五科平衡</h3>
+            <ul><li>兩個科目輪替複習</li><li>最後整理錯題與重點</li></ul>
+            <button class="button button-primary button-small" type="button" data-apply-strategy="balanced">套用這個節奏</button>
+          </article>
+          <article class="strategy-card strategy-sprint">
+            <span class="strategy-icon" aria-hidden="true">進</span>
+            <p>每天 90～120 分鐘</p>
+            <h3>考前整合</h3>
+            <ul><li>重點科目優先</li><li>題組演練加訂正</li></ul>
+            <button class="button button-secondary button-small" type="button" data-apply-strategy="sprint">套用這個節奏</button>
+          </article>
+        </div>
+        <div class="strategy-reminder" role="note">
+          <span aria-hidden="true">💡</span>
+          <p><strong>安排提醒：</strong><span id="rotating-plan-advice">先排固定作息，再把精神最好的時段留給最需要加強的科目。</span></p>
+          <button id="next-plan-advice" class="text-button" type="button">換一個提醒</button>
+        </div>
+      </section>
+
+      <section class="plan-builder-layout" aria-label="建立複習計畫">
+        <form id="study-plan-form" class="plan-form-card" novalidate>
+          <input id="plan-item-id" name="itemId" type="hidden">
+          <div class="plan-form-heading">
+            <div><p class="section-label">ADD TO MY WEEK</p><h2 id="plan-form-title">新增每日作息或複習內容</h2></div>
+            <span class="plan-form-icon" aria-hidden="true">＋</span>
+          </div>
+          <div class="plan-form-grid">
+            <label class="field">
+              <span>星期 <em>必填</em></span>
+              <select id="plan-day" name="day" required>
+                <option value="0">星期一</option><option value="1">星期二</option><option value="2">星期三</option>
+                <option value="3">星期四</option><option value="4">星期五</option><option value="5">星期六</option><option value="6">星期日</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>內容類型 <em>必填</em></span>
+              <select id="plan-type" name="type" required>
+                <option value="study">讀書複習</option>
+                <option value="routine">日常作息</option>
+              </select>
+            </label>
+            <label id="plan-subject-field" class="field">
+              <span>科目</span>
+              <select id="plan-subject" name="subject">
+                <option value="國文">國文</option><option value="英文">英文</option><option value="數學">數學</option>
+                <option value="自然">自然</option><option value="社會">社會</option><option value="其他">其他</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>開始時間 <em>必填</em></span>
+              <input id="plan-start-time" name="startTime" type="time" value="19:00" required>
+            </label>
+            <label class="field field-wide">
+              <span>要做什麼 <em>必填</em></span>
+              <input id="plan-title" name="title" maxlength="60" placeholder="例如：數學一元二次方程練習，或晚餐與休息" required>
+              <small id="plan-title-error" class="field-error"></small>
+            </label>
+            <label class="field">
+              <span>預計時間</span>
+              <select id="plan-duration" name="duration">
+                <option value="10">10 分鐘</option><option value="20">20 分鐘</option><option value="30" selected>30 分鐘</option>
+                <option value="45">45 分鐘</option><option value="60">60 分鐘</option><option value="90">90 分鐘</option>
+              </select>
+            </label>
+            <label class="field field-wide">
+              <span>提醒自己 <small>選填</small></span>
+              <textarea id="plan-note" name="note" rows="2" maxlength="100" placeholder="例如：先看講義重點，再寫 10 題"></textarea>
+            </label>
+          </div>
+          <p id="plan-form-feedback" class="plan-form-feedback" role="status"></p>
+          <div class="plan-form-actions">
+            <button id="cancel-plan-edit" class="button button-secondary" type="button" hidden>取消修改</button>
+            <button class="button button-primary" type="submit"><span id="plan-submit-label">加入本週計畫</span></button>
+          </div>
+        </form>
+
+        <aside class="plan-gentle-guide">
+          <span class="guide-leaf" aria-hidden="true">葉</span>
+          <p class="section-label">GENTLE PLANNING</p>
+          <h2>計畫留一點空白，反而更走得久</h2>
+          <ul>
+            <li>平日先安排 1～2 個重點就好。</li>
+            <li>每 30～45 分鐘，記得留短暫休息。</li>
+            <li>可拖曳卡片到其他日期，臨時調整不算失敗。</li>
+          </ul>
+        </aside>
+      </section>
+
+      <section class="weekly-plan-section" aria-labelledby="weekly-plan-title">
+        <div class="section-heading">
+          <div><p class="section-label">MY WEEK</p><h2 id="weekly-plan-title">我的一週作息與複習表</h2><p id="plan-week-label" class="plan-week-label">本週日期</p></div>
+          <div class="weekly-plan-tools">
+            <div class="plan-week-switcher" role="group" aria-label="切換計畫週次">
+              <button class="is-active" type="button" data-plan-week="0" aria-pressed="true">本週</button>
+              <button type="button" data-plan-week="1" aria-pressed="false">下週</button>
+            </div>
+            <p class="section-support">桌機可拖曳卡片換日期；手機可按「修改」調整</p>
+            <button class="button button-secondary button-small" type="button" data-print-plan><span aria-hidden="true">▣</span>列印</button>
+          </div>
+        </div>
+        <div id="study-plan-week" class="weekly-plan-board"></div>
+      </section>
+
+      <!-- 列印時只顯示這張橫式週計畫表；內容由 study-plan.js 自動產生。 -->
+      <section id="plan-print-sheet" class="plan-print-sheet" aria-label="可列印複習計畫表">
+        <header class="print-plan-header">
+          <div>
+            <p>ExamMate 國中會考五科自主學習平台</p>
+            <h1>我的會考複習計畫表</h1>
+          </div>
+          <div class="print-plan-meta">
+            <strong id="print-student-name">ExamMate 學習者</strong>
+            <span id="print-week-range"></span>
+          </div>
+        </header>
+        <div id="print-plan-countdowns" class="print-plan-countdowns"></div>
+        <table class="print-plan-table">
+          <thead id="print-plan-head"></thead>
+          <tbody id="print-plan-body"></tbody>
+        </table>
+        <footer class="print-plan-footer">
+          <span>本週一句話：</span>
+          <strong id="print-plan-motto">穩定完成每一小步，就是最可靠的進步。</strong>
+          <small>列印日期：<span id="print-created-date"></span></small>
+        </footer>
       </section>
     </section>
 
@@ -262,8 +473,9 @@
         </a>
         <nav class="desktop-navigation" aria-label="主要導覽">
           <button class="nav-item" type="button" data-app-view="dashboard"><span class="nav-icon" aria-hidden="true">⌂</span>首頁</button>
+          <button class="nav-item" type="button" data-app-view="plan"><span class="nav-icon" aria-hidden="true">日</span>複習計畫</button>
           <button class="nav-item is-active" type="button" data-app-view="subjects"><span class="nav-icon" aria-hidden="true">▦</span>五科學習</button>
-          <button class="nav-item" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">↺</span>錯題</button>
+          <button class="nav-item" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">↺</span>錯題本</button>
         </nav>
         <span class="prototype-badge">UI Prototype</span>
       </header>
@@ -271,13 +483,13 @@
       <div class="learning-hero">
         <div>
           <p class="eyebrow">TODAY'S MISSION</p>
-          <h1 id="subjects-title">今天完成三科，就很棒了。</h1>
-          <p>國文、英文、數學各 10 分鐘。自然與社會可以自由練習。</p>
+          <h1 id="subjects-title">今天完成五科，就很棒了。</h1>
+          <p>國文、英文、數學、自然、社會各約 10 分鐘，依自己的節奏逐科完成。</p>
         </div>
         <div class="daily-completion-card" aria-label="今日完成科目">
           <span>今日完成</span>
-          <strong><b id="daily-completed-count">0</b>／3 科</strong>
-          <div class="progress-bar progress-bar-large" role="progressbar" aria-label="今日任務進度" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0">
+          <strong><b id="daily-completed-count">0</b>／5 科</strong>
+          <div class="progress-bar progress-bar-large" role="progressbar" aria-label="今日任務進度" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0">
             <span id="daily-progress-bar"></span>
           </div>
         </div>
@@ -286,7 +498,7 @@
       <section class="component-section" aria-labelledby="daily-missions-title">
         <div class="section-heading compact-heading">
           <div><p class="section-label">DAILY MISSION</p><h2 id="daily-missions-title">今日任務</h2></div>
-          <p class="section-support">約 30 分鐘完成</p>
+          <p class="section-support">全部約 50 分鐘，也可以分段完成</p>
         </div>
         <div id="daily-task-grid" class="task-card-grid"></div>
       </section>
@@ -311,6 +523,18 @@
       <div id="subject-page-content"></div>
     </section>
 
+    <!-- 單元會考整理：學生先複習核心觀念，再進入同單元測驗。 -->
+    <section id="unit-review-view" class="product-view unit-review-view" aria-labelledby="unit-review-title" hidden>
+      <header class="product-topbar product-topbar-simple">
+        <button class="button button-secondary button-small" type="button" data-app-view="subject"><span aria-hidden="true">←</span>單元列表</button>
+        <a class="brand app-home-link" href="#" data-app-view="dashboard" aria-label="回到 ExamMate 首頁">
+          <span class="brand-mark brand-mark-small" aria-hidden="true">E</span><span><strong>ExamMate</strong><small>五科自主學習平台</small></span>
+        </a>
+        <button class="icon-button" type="button" data-app-view="wrong" aria-label="查看錯題">↺</button>
+      </header>
+      <div id="unit-review-content"></div>
+    </section>
+
     <section id="practice-view" class="product-view practice-view" aria-labelledby="practice-title" hidden>
       <header class="practice-header">
         <button id="leave-practice-button" class="button button-secondary button-small" type="button"><span aria-hidden="true">←</span>離開練習</button>
@@ -328,22 +552,185 @@
         </a>
         <nav class="desktop-navigation" aria-label="主要導覽">
           <button class="nav-item" type="button" data-app-view="dashboard"><span class="nav-icon" aria-hidden="true">⌂</span>首頁</button>
+          <button class="nav-item" type="button" data-app-view="plan"><span class="nav-icon" aria-hidden="true">日</span>複習計畫</button>
           <button class="nav-item" type="button" data-app-view="subjects"><span class="nav-icon" aria-hidden="true">▦</span>五科學習</button>
-          <button class="nav-item is-active" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">↺</span>錯題</button>
+          <button class="nav-item is-active" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">↺</span>錯題本</button>
         </nav>
         <span id="wrong-count-badge" class="prototype-badge">0 題</span>
       </header>
       <div class="wrong-page-heading">
-        <div><p class="eyebrow">REVIEW AGAIN</p><h1 id="wrong-title">錯題不是失敗，是下一次答對的線索。</h1><p>答錯的題目會自動放在這裡。確認已經學會後，就可以標記為「已掌握」。</p></div>
+        <div><p class="eyebrow">MY WRONG QUESTION CENTER</p><h1 id="wrong-title">把每一次卡住，整理成下一次會做的線索。</h1><p>題庫答錯會自動收集；課本、講義與考卷上的題目，也能拍照或手動記進數位錯題本。</p></div>
       </div>
-      <div id="wrong-question-list" class="wrong-question-list"></div>
+      <div class="wrong-center-tabs" role="tablist" aria-label="錯題本類型">
+        <button id="bank-wrong-tab" class="wrong-center-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="bank-wrong-panel" data-wrong-tab="bank">
+          <span aria-hidden="true">↺</span><strong>題庫自動錯題</strong><small>作答後自動收集</small>
+        </button>
+        <button id="digital-wrong-tab" class="wrong-center-tab" type="button" role="tab" aria-selected="false" aria-controls="digital-wrong-panel" data-wrong-tab="digital">
+          <span aria-hidden="true">簿</span><strong>我的數位錯題本</strong><small>拍照、分類與分析</small>
+        </button>
+      </div>
+
+      <section id="bank-wrong-panel" class="wrong-center-panel" role="tabpanel" aria-labelledby="bank-wrong-tab">
+        <div class="wrong-panel-intro">
+          <div><p class="section-label">AUTO COLLECTED</p><h2>題庫練習錯題</h2><p>確認已經理解後，可標記為「已掌握」或直接再答一次。</p></div>
+          <span id="wrong-bank-summary" class="wrong-panel-chip">系統自動整理</span>
+        </div>
+        <div id="wrong-question-list" class="wrong-question-list"></div>
+      </section>
+
+      <section id="digital-wrong-panel" class="wrong-center-panel digital-wrong-panel" role="tabpanel" aria-labelledby="digital-wrong-tab" hidden>
+        <div id="digital-wrong-alert" class="plan-data-alert" role="alert" hidden>
+          <div><strong>數位錯題本資料暫時無法讀取</strong><p>題庫錯題與其他學習資料不受影響，可以重新建立這本錯題本。</p></div>
+          <button id="reset-digital-wrong" class="button button-secondary button-small" type="button">重新建立錯題本</button>
+        </div>
+
+        <section class="digital-wrong-dashboard" aria-labelledby="weakness-dashboard-title">
+          <div class="digital-dashboard-heading">
+            <div><p class="section-label">WEAKNESS DASHBOARD</p><h2 id="weakness-dashboard-title">我的加強方向</h2><p id="digital-analysis-summary">先記下第一題，系統就能開始整理需要加強的科目與單元。</p></div>
+            <button id="open-digital-entry" class="button button-primary" type="button"><span aria-hidden="true">＋</span>新增錯題</button>
+          </div>
+          <div class="digital-stat-grid">
+            <article><span>已收錄</span><strong id="digital-total-count">0</strong><small>題錯題</small></article>
+            <article><span>待複習</span><strong id="digital-due-count">0</strong><small>今天以前到期</small></article>
+            <article><span>持續加強</span><strong id="digital-active-count">0</strong><small>尚未掌握</small></article>
+            <article><span>已掌握</span><strong id="digital-mastered-count">0</strong><small>保留學習紀錄</small></article>
+          </div>
+          <div class="weakness-analysis-grid">
+            <article class="analysis-card">
+              <div class="analysis-card-heading"><h3>科目弱點分布</h3><span>依未掌握錯題計算</span></div>
+              <div id="digital-subject-analysis" class="analysis-bar-list"></div>
+            </article>
+            <article class="analysis-card">
+              <div class="analysis-card-heading"><h3>最需要加強的單元</h3><span>錯題＋複習到期綜合排序</span></div>
+              <div id="digital-unit-priority" class="priority-unit-list"></div>
+            </article>
+            <article class="analysis-card">
+              <div class="analysis-card-heading"><h3>常見錯誤原因</h3><span>找出重複發生的問題</span></div>
+              <div id="digital-reason-analysis" class="analysis-bar-list"></div>
+            </article>
+          </div>
+        </section>
+
+        <section id="digital-entry-section" class="digital-entry-section" aria-labelledby="digital-entry-title" hidden>
+          <form id="digital-wrong-form" class="digital-wrong-form" novalidate>
+            <input id="digital-wrong-id" name="itemId" type="hidden">
+            <input id="digital-image-data" name="imageData" type="hidden">
+            <div class="digital-form-heading">
+              <div><p class="section-label">ADD A WRONG QUESTION</p><h2 id="digital-entry-title">記下這一題為什麼會錯</h2><p>照片只是協助回想；真正有價值的是分類錯因與寫下正確觀念。</p></div>
+              <button id="close-digital-entry" class="icon-button" type="button" aria-label="關閉新增錯題表單">×</button>
+            </div>
+
+            <div class="digital-capture-layout">
+              <div>
+                <div id="digital-paste-zone" class="digital-paste-zone" tabindex="0" role="button" aria-label="貼上或選擇錯題圖片">
+                  <div id="digital-image-placeholder">
+                    <span class="capture-icon" aria-hidden="true">圖</span>
+                    <strong>貼上截圖或拍下題目</strong>
+                    <p>電腦可按 Ctrl＋V，手機可直接拍照或選擇相片。</p>
+                  </div>
+                  <img id="digital-image-preview" alt="錯題圖片預覽" hidden>
+                </div>
+                <div class="capture-actions">
+                  <label class="button button-secondary button-small" for="digital-image-file"><span aria-hidden="true">▣</span>拍照／選圖</label>
+                  <input id="digital-image-file" class="sr-only" type="file" accept="image/*" capture="environment">
+                  <button id="remove-digital-image" class="text-button" type="button" hidden>移除圖片</button>
+                </div>
+                <p class="capture-note">圖片會自動縮小並只儲存在這台裝置；目前不會上傳雲端，也不會自動辨識文字。</p>
+              </div>
+
+              <div class="digital-form-grid">
+                <label class="field">
+                  <span>科目 <em>必填</em></span>
+                  <select id="digital-subject" name="subjectId" required>
+                    <option value="chinese">國文</option><option value="english">英文</option><option value="math">數學</option>
+                    <option value="science">自然</option><option value="social">社會</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>單元 <em>必填</em></span>
+                  <select id="digital-unit" name="unit" required></select>
+                </label>
+                <label class="field">
+                  <span>題目來源 <small>選填</small></span>
+                  <input id="digital-source" name="source" maxlength="50" placeholder="例如：第二次模擬考、數學講義">
+                </label>
+                <label class="field">
+                  <span>錯誤原因 <em>必填</em></span>
+                  <select id="digital-reason" name="reason" required>
+                    <option value="觀念不清">觀念不清</option>
+                    <option value="題意判讀">題意判讀錯誤</option>
+                    <option value="計算失誤">計算失誤</option>
+                    <option value="粗心漏看">粗心漏看條件</option>
+                    <option value="時間不足">時間不足</option>
+                    <option value="猜題">不確定而猜題</option>
+                    <option value="其他">其他</option>
+                  </select>
+                </label>
+                <label class="field field-wide">
+                  <span>題目重點或題幹 <em>必填</em></span>
+                  <textarea id="digital-question" name="question" rows="3" maxlength="500" placeholder="不必整題照抄，寫下能讓自己辨認這題的重點即可。" required></textarea>
+                  <small id="digital-question-error" class="field-error"></small>
+                </label>
+                <label class="field">
+                  <span>我的答案 <small>選填</small></span>
+                  <textarea id="digital-my-answer" name="myAnswer" rows="2" maxlength="250" placeholder="當時怎麼想、怎麼作答？"></textarea>
+                </label>
+                <label class="field">
+                  <span>正確答案／正確觀念 <em>必填</em></span>
+                  <textarea id="digital-correct-answer" name="correctAnswer" rows="2" maxlength="350" placeholder="寫下正確解法或最重要的判斷依據。" required></textarea>
+                  <small id="digital-answer-error" class="field-error"></small>
+                </label>
+                <label class="field field-wide">
+                  <span>下次要提醒自己的事 <small>選填</small></span>
+                  <textarea id="digital-reflection" name="reflection" rows="2" maxlength="250" placeholder="例如：看到「至少」要先畫線，再決定是否包含端點。"></textarea>
+                </label>
+                <label class="field">
+                  <span>下次複習</span>
+                  <select id="digital-review-interval" name="reviewInterval">
+                    <option value="1">明天</option><option value="3" selected>3 天後</option>
+                    <option value="7">7 天後</option><option value="14">14 天後</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>目前狀態</span>
+                  <select id="digital-status" name="status">
+                    <option value="new">還不熟</option>
+                    <option value="reviewing">複習中</option>
+                    <option value="mastered">已掌握</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <p id="digital-form-feedback" class="plan-form-feedback" role="status"></p>
+            <div class="plan-form-actions">
+              <button id="cancel-digital-edit" class="button button-secondary" type="button">取消</button>
+              <button class="button button-primary" type="submit"><span id="digital-submit-label">存入數位錯題本</span></button>
+            </div>
+          </form>
+        </section>
+
+        <section class="digital-library-section" aria-labelledby="digital-library-title">
+          <div class="digital-library-heading">
+            <div><p class="section-label">MY WRONG QUESTION LIBRARY</p><h2 id="digital-library-title">錯題歸檔</h2></div>
+            <p id="digital-filter-summary">顯示全部錯題</p>
+          </div>
+          <div class="digital-filter-bar">
+            <label><span>科目</span><select id="digital-filter-subject"><option value="all">全部科目</option><option value="chinese">國文</option><option value="english">英文</option><option value="math">數學</option><option value="science">自然</option><option value="social">社會</option></select></label>
+            <label><span>狀態</span><select id="digital-filter-status"><option value="active">待加強</option><option value="due">到期複習</option><option value="mastered">已掌握</option><option value="all">全部狀態</option></select></label>
+            <label><span>錯因</span><select id="digital-filter-reason"><option value="all">全部錯因</option><option value="觀念不清">觀念不清</option><option value="題意判讀">題意判讀</option><option value="計算失誤">計算失誤</option><option value="粗心漏看">粗心漏看</option><option value="時間不足">時間不足</option><option value="猜題">猜題</option><option value="其他">其他</option></select></label>
+            <label class="digital-search-field"><span>搜尋</span><input id="digital-filter-search" type="search" placeholder="搜尋題目、來源或單元"></label>
+          </div>
+          <div id="digital-wrong-list" class="digital-wrong-list"></div>
+        </section>
+      </section>
     </section>
   </main>
 
   <nav id="bottom-navigation" class="bottom-navigation" aria-label="手機版主要導覽" hidden>
     <button class="bottom-nav-item is-active" type="button" data-app-view="dashboard"><span aria-hidden="true">⌂</span><small>首頁</small></button>
+    <button class="bottom-nav-item" type="button" data-app-view="plan"><span aria-hidden="true">日</span><small>計畫</small></button>
     <button class="bottom-nav-item" type="button" data-app-view="subjects"><span aria-hidden="true">▦</span><small>五科</small></button>
-    <button class="bottom-nav-item" type="button" data-app-view="wrong"><span aria-hidden="true">↺</span><small>錯題</small></button>
+    <button class="bottom-nav-item" type="button" data-app-view="wrong"><span aria-hidden="true">↺</span><small>錯題本</small></button>
   </nav>
 
   <dialog id="answer-dialog" class="answer-dialog">
@@ -352,6 +739,7 @@
     <h2 id="answer-dialog-title">答對了！</h2>
     <p id="answer-dialog-answer" class="answer-key"></p>
     <p id="answer-dialog-explanation" class="answer-explanation"></p>
+    <p id="answer-dialog-error" class="answer-common-error"></p>
     <div class="dialog-actions">
       <button id="answer-next-button" class="button button-primary button-full" type="button">下一題</button>
     </div>
@@ -425,11 +813,81 @@
   <dialog id="reset-dialog" class="confirm-dialog">
     <div class="confirm-icon" aria-hidden="true">!</div>
     <h2>確定要重新設定嗎？</h2>
-    <p>這會清除個人資料、自訂日期與今日小目標，而且無法復原。</p>
+    <p>這會清除個人資料、自訂日期、今日小目標、學習紀錄、題庫錯題、數位錯題本與複習計畫，而且無法復原。</p>
     <div class="form-actions">
       <button class="button button-secondary" data-close-dialog="reset-dialog" type="button">先不要</button>
       <button id="confirm-reset-button" class="button button-danger" type="button">清除全部資料</button>
     </div>
+  </dialog>
+
+  <dialog id="weekly-plan-reminder-dialog" class="weekly-plan-reminder-dialog">
+    <button id="close-weekly-plan-reminder" class="weekly-reminder-close" type="button" aria-label="延後提醒">×</button>
+    <div class="weekly-reminder-icon" aria-hidden="true">日</div>
+    <p class="section-label">SATURDAY NIGHT CHECK-IN</p>
+    <h2>一起安排下週進度吧</h2>
+    <p>先花幾分鐘看一眼下週，安排做得到的科目與休息時間，星期一就不必臨時決定。</p>
+    <div class="weekly-reminder-range">
+      <span>下週日期</span>
+      <strong id="weekly-reminder-date-range"></strong>
+    </div>
+    <ul>
+      <li>先放入補習、社團與固定作息。</li>
+      <li>待加強科目優先安排在精神較好的時段。</li>
+      <li>每天保留一點彈性，不需要把時間排滿。</li>
+    </ul>
+    <div class="weekly-reminder-actions">
+      <button id="snooze-weekly-plan-reminder" class="button button-secondary" type="button">兩小時後提醒</button>
+      <button id="dismiss-weekly-plan-reminder" class="text-button" type="button">本週先略過</button>
+      <button id="arrange-next-week-button" class="button button-primary" type="button">開始安排下週</button>
+    </div>
+  </dialog>
+
+  <dialog id="appearance-backup-dialog" class="appearance-backup-dialog">
+    <header class="appearance-dialog-header">
+      <div><p class="section-label">APPEARANCE & DATA</p><h2>外觀與資料備份</h2><p>選擇每天看起來最舒服的版本，也可以把這台裝置中的學習資料帶到其他裝置。</p></div>
+      <button id="close-appearance-backup" class="icon-button" type="button" aria-label="關閉外觀與資料設定">×</button>
+    </header>
+
+    <section class="appearance-section" aria-labelledby="appearance-title">
+      <div class="appearance-section-heading"><div><h3 id="appearance-title">選擇網站版本</h3><p>內容與功能完全相同，只有配色與氣氛不同。</p></div><span id="appearance-saved-status">自動儲存選擇</span></div>
+      <div class="theme-choice-grid">
+        <button class="theme-choice-card is-active" type="button" data-theme-choice="clean" aria-pressed="true">
+          <span class="theme-preview theme-preview-clean"><i></i><i></i><i></i><i></i></span>
+          <span><strong>清爽版</strong><small>柔藍、水綠與乾淨留白</small></span>
+          <b>目前使用</b>
+        </button>
+        <button class="theme-choice-card" type="button" data-theme-choice="colorful" aria-pressed="false">
+          <span class="theme-preview theme-preview-colorful"><i></i><i></i><i></i><i></i></span>
+          <span><strong>繽紛馬卡龍版</strong><small>粉紫、蜜桃、薄荷與晴空藍</small></span>
+          <b>切換版本</b>
+        </button>
+      </div>
+    </section>
+
+    <section class="backup-section" aria-labelledby="backup-title">
+      <div class="appearance-section-heading">
+        <div><h3 id="backup-title">學生／家長自行備份</h3><p>備份會包含個人資料、日期、學習進度、複習計畫、題庫錯題，以及數位錯題本中的圖片。</p></div>
+        <span id="last-backup-label">尚未備份</span>
+      </div>
+      <div class="backup-option-grid">
+        <article>
+          <span class="backup-option-icon" aria-hidden="true">↓</span>
+          <div><h4>下載完整備份</h4><p>產生一個 ExamMate 備份檔，存進電腦、手機、雲端硬碟或傳給家長保管。</p></div>
+          <button id="export-exammate-backup" class="button button-primary" type="button">下載備份檔</button>
+        </article>
+        <article>
+          <span class="backup-option-icon backup-option-icon-import" aria-hidden="true">↑</span>
+          <div><h4>從備份檔還原</h4><p>選擇之前下載的備份檔。還原會覆蓋這台裝置目前的 ExamMate 資料。</p></div>
+          <label class="button button-secondary" for="import-exammate-backup">選擇備份檔</label>
+          <input id="import-exammate-backup" class="sr-only" type="file" accept=".json,application/json">
+        </article>
+      </div>
+      <div class="backup-privacy-note">
+        <span aria-hidden="true">鎖</span>
+        <p><strong>目前不需要後台：</strong>備份檔由學生或家長自行保存，網站不會自動上傳。若未來需要跨裝置自動同步、帳號登入或教師查看全班資料，再建置雲端後台會比較合適。</p>
+      </div>
+      <p id="backup-feedback" class="plan-form-feedback" role="status"></p>
+    </section>
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -439,6 +897,18 @@
   </noscript>
   <script src="config.js"></script>
   <script src="script.js"></script>
+  <script src="question-bank.js"></script>
+  <script src="exam-question-bank.js"></script>
+  <script src="chinese-expansion-bank.js"></script>
+  <script src="english-expansion-bank.js"></script>
+  <script src="english-question-bank-100.js"></script>
+  <script src="unit-review-bank.js"></script>
+  <script src="chinese-handbook.js"></script>
+  <script src="english-handbook.js"></script>
+  <script src="study-plan.js"></script>
+  <script src="digital-wrong-notebook.js"></script>
   <script src="learning.js"></script>
+  <script src="weekly-plan-reminder.js"></script>
+  <script src="appearance-backup.js"></script>
 </body>
 </html>
