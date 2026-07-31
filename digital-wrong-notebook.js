@@ -432,6 +432,7 @@
           </div>
         </div>
         <div class="digital-card-actions">
+          <button class="button button-coach button-small" type="button" data-coach-digital="${escapeHtml(item.id)}"><span aria-hidden="true">問</span>交給 AI 教練</button>
           <button class="text-button" type="button" data-edit-digital="${escapeHtml(item.id)}">修改</button>
           <button class="text-button text-button-danger" type="button" data-delete-digital="${escapeHtml(item.id)}">刪除</button>
           ${item.status === "mastered"
@@ -519,6 +520,8 @@
 
   function handleLibraryClick(event) {
     if (event.target.closest("[data-open-digital-entry]")) return showEntryForm();
+    const coach = event.target.closest("[data-coach-digital]");
+    if (coach) return window.ExamMateAICoach?.openDigital?.(coach.dataset.coachDigital);
     const edit = event.target.closest("[data-edit-digital]");
     if (edit) return showEntryForm(findItem(edit.dataset.editDigital));
     const remove = event.target.closest("[data-delete-digital]");
@@ -576,6 +579,12 @@
     render();
   }
 
-  window.ExamMateDigitalNotebook = { render, switchTab, reset: resetDamagedData };
+  window.ExamMateDigitalNotebook = {
+    render,
+    switchTab,
+    reset: resetDamagedData,
+    getItem: (id) => findItem(id),
+    getItems: () => [...state.items]
+  };
   document.addEventListener("DOMContentLoaded", init);
 })();

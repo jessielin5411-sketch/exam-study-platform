@@ -11,6 +11,7 @@
     unitReviews: "examMate.unitReviews.v1",
     studyPlan: "examMate.studyPlan.v1",
     digitalWrongNotebook: "examMate.digitalWrongNotebook.v1",
+    aiCoach: "examMate.aiCoach.v1",
     weeklyPlanPrompt: "examMate.weeklyPlanPrompt.v1",
     appearance: "examMate.appearance.v1",
     backupMeta: "examMate.backupMeta.v1"

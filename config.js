@@ -4,6 +4,17 @@
  * 日期格式使用中華民國年 YYY-MM-DD，例如民國 116 年 5 月 15 日寫成 116-05-15。
  */
 const examConfig = {
+  /*
+   * 國中會考 AI 教練設定。
+   * 題庫錯題與數位錯題本的引導診斷不需要 API；照片文字、圖形與選項辨識才使用安全後端。
+   * 安全後端需接收 POST JSON，並回傳 question 物件（prompt、unit、ability、options、answer、
+   * explanation、commonError）。後端設定完成後，再把 customQuestionEnabled 改為 true。
+   * 請勿把任何 AI API Key 寫在這個前端檔案中。
+   */
+  aiCoach: {
+    customQuestionEnabled: false,
+    endpoint: ""
+  },
   defaultYear: "116",
   examYears: {
     "116": {

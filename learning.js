@@ -300,7 +300,7 @@
 
   function goToView(viewName) {
     if (!hasProfile()) return;
-    ["dashboard-view", "plan-view", "subjects-view", "subject-view", "unit-review-view", "practice-view", "wrong-view"].forEach((id) => {
+    ["dashboard-view", "plan-view", "subjects-view", "subject-view", "unit-review-view", "practice-view", "coach-view", "wrong-view"].forEach((id) => {
       const view = $("#" + id);
       if (view) view.hidden = true;
     });
@@ -327,6 +327,10 @@
       renderUnitReviewPage(state.currentSubjectId, state.currentUnitId);
     }
     if (viewName === "practice") $("#practice-view").hidden = false;
+    if (viewName === "coach") {
+      $("#coach-view").hidden = false;
+      window.ExamMateAICoach?.render();
+    }
     if (viewName === "wrong") {
       $("#wrong-view").hidden = false;
       renderWrongQuestions();
@@ -591,13 +595,26 @@
     }
 
     const dialog = $("#answer-dialog");
+    const coachButton = $("#answer-coach-button");
+    const revealButton = $("#answer-reveal-button");
     dialog.classList.toggle("is-wrong", !isCorrect);
     $("#answer-dialog-icon").textContent = isCorrect ? "✓" : "!";
-    $("#answer-dialog-label").textContent = isCorrect ? "立即解析・答對" : "立即解析・再看一次";
-    $("#answer-dialog-title").textContent = isCorrect ? "答對了！" : "這題先收進錯題本";
-    $("#answer-dialog-answer").textContent = `正確答案：${String.fromCharCode(65 + question.answer)}．${question.options[question.answer]}`;
-    $("#answer-dialog-explanation").textContent = question.explanation;
-    $("#answer-dialog-error").textContent = question.commonError ? `常見錯誤：${question.commonError}` : "";
+    $("#answer-dialog-label").textContent = isCorrect ? "立即解析・答對" : "AI 教練・先找考點";
+    $("#answer-dialog-title").textContent = isCorrect ? "答對了！" : "這題先別急著看答案";
+    $("#answer-dialog-answer").textContent = isCorrect
+      ? `正確答案：${String.fromCharCode(65 + question.answer)}．${question.options[question.answer]}`
+      : `這題真正考的是：${question.ability || `${question.unit}的核心觀念`}`;
+    $("#answer-dialog-explanation").textContent = isCorrect
+      ? question.explanation
+      : "先回想自己剛才依據哪一個線索判斷。你可以請 AI 教練一步一步陪你找錯因，再重答一次。";
+    $("#answer-dialog-error").textContent = isCorrect || !question.commonError ? "" : `可能卡住的地方：${question.commonError}`;
+    coachButton.hidden = isCorrect;
+    revealButton.hidden = isCorrect;
+    coachButton.dataset.coachSubject = subject.id;
+    coachButton.dataset.coachQuestion = question.id;
+    coachButton.dataset.coachAnswer = String(practice.selectedIndex);
+    revealButton.dataset.revealSubject = subject.id;
+    revealButton.dataset.revealQuestion = question.id;
     $("#answer-next-button").textContent = practice.index === practice.questions.length - 1 ? "查看完成結果" : "下一題";
     if (typeof dialog.showModal === "function") dialog.showModal(); else dialog.setAttribute("open", "");
   }
@@ -779,6 +796,31 @@
       return;
     }
     if (event.target.closest("#submit-answer-button")) return submitAnswer();
+
+    const coachButton = event.target.closest("#answer-coach-button");
+    if (coachButton) {
+      const dialog = $("#answer-dialog");
+      if (dialog.open) dialog.close();
+      window.ExamMateAICoach?.open(
+        coachButton.dataset.coachSubject,
+        coachButton.dataset.coachQuestion,
+        Number(coachButton.dataset.coachAnswer)
+      );
+      return;
+    }
+
+    const revealButton = event.target.closest("#answer-reveal-button");
+    if (revealButton) {
+      const question = findQuestion(revealButton.dataset.revealSubject, revealButton.dataset.revealQuestion);
+      if (!question) return;
+      $("#answer-dialog-label").textContent = "立即解析・完整觀念";
+      $("#answer-dialog-title").textContent = "把這個判斷點記起來";
+      $("#answer-dialog-answer").textContent = `正確答案：${String.fromCharCode(65 + question.answer)}．${question.options[question.answer]}`;
+      $("#answer-dialog-explanation").textContent = question.explanation;
+      $("#answer-dialog-error").textContent = question.commonError ? `下次留意：${question.commonError}` : "";
+      revealButton.hidden = true;
+      return;
+    }
 
     const mastered = event.target.closest("[data-mastered-question]");
     if (mastered) return markQuestionMastered(mastered.dataset.masteredSubject, mastered.dataset.masteredQuestion);

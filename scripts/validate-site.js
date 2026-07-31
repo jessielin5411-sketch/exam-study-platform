@@ -3,12 +3,19 @@ const fs = require("fs");
 const vm = require("vm");
 
 const html = fs.readFileSync("index.html", "utf8");
+const aiCoachSource = fs.readFileSync("ai-coach.js", "utf8");
+const aiCoachPromptSource = aiCoachSource.slice(
+  aiCoachSource.indexOf("const SUBJECT_PROMPTS ="),
+  aiCoachSource.indexOf("const UNIT_COMPARISONS =")
+);
 const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
 const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
 const scriptSources = [...html.matchAll(/<script src="([^"]+)"/g)].map((match) => match[1]);
-const missingScripts = scriptSources.filter((source) => !fs.existsSync(source));
+const missingScripts = scriptSources.filter((source) => !fs.existsSync(source.split(/[?#]/)[0]));
 
 const css = fs.readFileSync("style.css", "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+const desktopBottomNavigationHidden = /\.bottom-navigation\s*\{[^}]*display:\s*none\s*;[^}]*\}/s.test(css);
+const mobileBottomNavigationVisible = /@media\s*\(max-width:\s*980px\)[\s\S]*?\.bottom-navigation:not\(\[hidden\]\)\s*\{[^}]*display:\s*grid\s*;[^}]*\}/s.test(css);
 let cssBraceBalance = 0;
 let cssMinimumBalance = 0;
 for (const character of css) {
@@ -172,6 +179,132 @@ function testAppearanceBackup() {
 
 testAppearanceBackup();
 
+function testAICoach() {
+  let ready;
+  let clickHandler;
+  const values = new Map();
+  function element() {
+    return {
+      hidden: false, textContent: "", innerHTML: "", disabled: false,
+      classList: { add() {}, remove() {}, toggle() {} },
+      setAttribute() {}, scrollIntoView() {}
+    };
+  }
+  const elements = {
+    "#coach-data-alert": element(),
+    "#coach-session-count": element(),
+    "#coach-mastered-count": element(),
+    "#coach-focus-label": element(),
+    "#coach-question-count": element(),
+    "#coach-question-list": element(),
+    "#coach-session-panel": element(),
+    "#coach-custom-status": element(),
+    "#toast": element()
+  };
+  const sandbox = {
+    console,
+    localStorage: {
+      getItem: (key) => values.get(key) || null,
+      setItem: (key, value) => values.set(key, value),
+      removeItem: (key) => values.delete(key)
+    },
+    document: {
+      querySelector: (selector) => elements[selector] || null,
+      querySelectorAll: () => [],
+      addEventListener: (event, callback) => {
+        if (event === "DOMContentLoaded") ready = callback;
+        if (event === "click") clickHandler = callback;
+      }
+    },
+    setTimeout: () => 1,
+    clearTimeout: () => {},
+    confirm: () => true,
+    ExamMateLearning: { goToView() {}, renderWrongQuestions() {} },
+    examConfig: { aiCoach: { customQuestionEnabled: false, endpoint: "" } },
+    examMateQuestionBank: {
+      chinese: {
+        id: "chinese", name: "國文", glyph: "文", theme: "chinese",
+        questions: [{ id: "coach-test", unit: "閱讀理解", ability: "找出文本證據", difficulty: 4, prompt: "測試題", options: ["甲", "乙", "丙", "丁"], answer: 1, explanation: "測試解析", commonError: "只憑印象作答" }]
+      },
+      english: { id: "english", name: "英文", glyph: "En", theme: "english", questions: [] },
+      math: { id: "math", name: "數學", glyph: "數", theme: "math", questions: [] },
+      science: { id: "science", name: "自然", glyph: "理", theme: "science", questions: [] },
+      social: { id: "social", name: "社會", glyph: "社", theme: "social", questions: [] }
+    }
+  };
+  sandbox.window = sandbox;
+  vm.runInNewContext(fs.readFileSync("ai-coach.js", "utf8"), sandbox);
+  ready();
+  if (!sandbox.ExamMateAICoach || typeof sandbox.ExamMateAICoach.render !== "function" || typeof sandbox.ExamMateAICoach.open !== "function" || typeof sandbox.ExamMateAICoach.openDigital !== "function" || typeof sandbox.ExamMateAICoach.getPrompt !== "function") {
+    throw new Error("AI 教練初始化失敗");
+  }
+  sandbox.ExamMateAICoach.render();
+  sandbox.ExamMateAICoach.open("chinese", "coach-test", 0);
+  if (!elements["#coach-session-panel"].innerHTML.includes("第 1／5 步") || elements["#coach-session-panel"].innerHTML.includes("完整解析")) {
+    throw new Error("AI 教練第一步不符合先診斷、後解析原則");
+  }
+  function click(selector, dataset = {}) {
+    clickHandler({ target: { closest: (query) => query === selector ? { dataset } : null } });
+  }
+  click('[data-coach-next="reason"]');
+  click("[data-coach-reason]", { coachReason: "reading" });
+  click('[data-coach-next="retry"]');
+  click("[data-coach-retry-index]", { coachRetryIndex: "1" });
+  if (elements["#coach-session-panel"].innerHTML.includes("完整解析")) throw new Error("AI 教練重答前提早顯示答案");
+  click("[data-coach-submit-retry]");
+  if (!elements["#coach-session-panel"].innerHTML.includes("第 5／5 步") || !elements["#coach-session-panel"].innerHTML.includes("完整解析")) {
+    throw new Error("AI 教練完成重答後沒有產生解析與筆記");
+  }
+  const finalReport = elements["#coach-session-panel"].innerHTML;
+  const fixedHeadings = ["① 本題考什麼？", "② 我為什麼會錯？", "③ 正確觀念", "④ 解題思考流程", "⑤ 命題老師真正想考的是？", "⑥ 一句記住它", "⑦ 易混淆比較", "⑧ 會考重點整理", "⑨ AI再提醒一次"];
+  const chineseFields = ["■ 修辭", "■ 詞語", "■ 成語", "■ 文言文", "■ 閱讀理解", "■ 作者觀點", "■ 命題技巧", "【會考常考】", "【容易混淆】", "【閱讀技巧】"];
+  if (!fixedHeadings.every((heading) => finalReport.includes(heading))) throw new Error("AI 教練固定九段診斷不完整");
+  if (!chineseFields.every((heading) => finalReport.includes(heading))) throw new Error("AI 教練國文科專屬分析不完整");
+  const promptChecks = {
+    chinese: ["■ 修辭", "■ 文言文", "【會考常考】", "【閱讀技巧】"],
+    english: ["■ 文法", "■ 時態", "【會考文法】", "【重要單字】"],
+    math: ["■ 建立式子", "■ 解題策略", "【公式】", "【秒殺技巧】"],
+    social: ["■ 歷史背景", "■ 時間軸", "【比較表】", "【一句口訣】"],
+    science: ["■ 原理", "■ 實驗", "【重點】", "【會考必考】"]
+  };
+  Object.entries(promptChecks).forEach(([subjectId, markers]) => {
+    const prompt = sandbox.ExamMateAICoach.getPrompt(subjectId);
+    if (!fixedHeadings.every((heading) => prompt.includes(heading)) || !markers.every((marker) => prompt.includes(marker))) {
+      throw new Error(`AI 教練 ${subjectId} 科 Prompt 不完整`);
+    }
+  });
+  values.set("examMate.digitalWrongNotebook.v1", JSON.stringify([{
+    id: "digital-test", subjectId: "chinese", unit: "成語", source: "講義", reason: "觀念不清",
+    question: "數位錯題測試", myAnswer: "依字面猜測", correctAnswer: "要回到語境判斷",
+    reflection: "核對使用對象", imageData: "data:image/jpeg;base64,AAAA"
+  }]));
+  sandbox.ExamMateAICoach.openDigital("digital-test");
+  if (!elements["#coach-session-panel"].innerHTML.includes("AI 科目老師") || !elements["#coach-session-panel"].innerHTML.includes("題目照片")) {
+    throw new Error("數位錯題沒有正確送入 AI 科目老師");
+  }
+  click('[data-coach-next="reason"]');
+  click("[data-coach-reason]", { coachReason: "concept" });
+  click('[data-coach-next="retry"]');
+  if (!elements["#coach-session-panel"].innerHTML.includes("正確答案／觀念") || !elements["#coach-session-panel"].innerHTML.includes("我能說出解法")) {
+    throw new Error("數位錯題沒有使用開放式理解檢查");
+  }
+  click("[data-coach-understanding]", { coachUnderstanding: "ready" });
+  click("[data-coach-submit-retry]");
+  if (!elements["#coach-session-panel"].innerHTML.includes("AI 科目老師的診斷") ||
+      !elements["#coach-session-panel"].innerHTML.includes("AI 筆記老師的整理") ||
+      !["整理知識", "會考重點", "比較表", "一句口訣", "時間軸", "常考整理"].every((text) => elements["#coach-session-panel"].innerHTML.includes(text))) {
+    throw new Error("雙 AI 老師的分工報告不完整");
+  }
+  click("[data-coach-source]", { coachSource: "photo" });
+  if (!elements["#coach-question-list"].innerHTML.includes("coach-photo-form") || !elements["#coach-question-list"].innerHTML.includes("照片辨識後端")) {
+    throw new Error("拍照詢問題目來源沒有正確顯示");
+  }
+  const saved = JSON.parse(values.get("examMate.aiCoach.v1") || "[]");
+  if (saved.length !== 2 || !saved.every((record) => record.retryCorrect === true) || saved[0].source !== "digital") throw new Error("AI 教練陪練紀錄沒有正確儲存");
+}
+
+testAICoach();
+
 const result = {
   htmlIdCount: ids.length,
   duplicateIds,
@@ -181,17 +314,28 @@ const result = {
   strategyCount: (html.match(/data-apply-strategy=/g) || []).length,
   printSheetCount: (html.match(/id="plan-print-sheet"/g) || []).length,
   wrongCenterPanelCount: (html.match(/class="wrong-center-panel/g) || []).length,
-  digitalNotebookScriptCount: (html.match(/src="digital-wrong-notebook\.js"/g) || []).length,
+  digitalNotebookScriptCount: (html.match(/src="digital-wrong-notebook\.js(?:\?[^\"]*)?"/g) || []).length,
   weeklyReminderScriptCount: (html.match(/src="weekly-plan-reminder\.js"/g) || []).length,
   appearanceBackupScriptCount: (html.match(/src="appearance-backup\.js"/g) || []).length,
+  aiCoachViewCount: (html.match(/id="coach-view"/g) || []).length,
+  aiCoachNavigationCount: (html.match(/data-app-view="coach"/g) || []).length,
+  aiCoachSourceCount: (html.match(/data-coach-source="(wrong|digital|photo)"/g) || []).length,
+  aiTeacherCardCount: (html.match(/class="coach-teacher-card/g) || []).length,
+  aiCoachScriptCount: (html.match(/src="ai-coach\.js(?:\?[^\"]*)?"/g) || []).length,
+  aiCoachStepCount: (aiCoachSource.match(/function renderStage(One|Two|Three|Four|Five)\(/g) || []).length,
+  aiCoachFixedHeadingCount: (aiCoachSource.match(/[①②③④⑤⑥⑦⑧⑨] /g) || []).length,
+  aiCoachSubjectPromptCount: (aiCoachPromptSource.match(/^    (chinese|english|math|social|science): \{$/gm) || []).length,
   themeChoiceCount: (html.match(/data-theme-choice=/g) || []).length,
   planWeekSwitchCount: (html.match(/data-plan-week=/g) || []).length,
   cssBraceBalance,
   cssNeverNegative: cssMinimumBalance >= 0,
+  desktopBottomNavigationHidden,
+  mobileBottomNavigationVisible,
   studyPlanInitialization: "ok",
   digitalNotebookInitialization: "ok",
   weeklyReminderScenario: "ok",
-  appearanceSwitching: "ok"
+  appearanceSwitching: "ok",
+  aiCoachInitialization: "ok"
 };
 
 console.log(JSON.stringify(result, null, 2));
@@ -200,6 +344,11 @@ if (duplicateIds.length || missingScripts.length || result.planViewCount !== 1 |
   result.wrongCenterPanelCount !== 2 || result.digitalNotebookScriptCount !== 1 ||
   result.weeklyReminderScriptCount !== 1 || result.planWeekSwitchCount !== 2 ||
   result.appearanceBackupScriptCount !== 1 || result.themeChoiceCount !== 2 ||
-  cssBraceBalance !== 0 || !result.cssNeverNegative) {
+  result.aiCoachViewCount !== 1 || result.aiCoachNavigationCount < 6 ||
+  result.aiCoachSourceCount !== 3 || result.aiTeacherCardCount !== 2 ||
+  result.aiCoachScriptCount !== 1 || result.aiCoachStepCount !== 5 ||
+  result.aiCoachFixedHeadingCount !== 9 || result.aiCoachSubjectPromptCount < 5 ||
+  cssBraceBalance !== 0 || !result.cssNeverNegative ||
+  !result.desktopBottomNavigationHidden || !result.mobileBottomNavigationVisible) {
   process.exitCode = 1;
 }
