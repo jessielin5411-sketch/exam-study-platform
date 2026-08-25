@@ -1,0 +1,5 @@
+# Cloudflare Worker 本機產生的檔案與私密設定，禁止推送到 GitHub。
+backend/node_modules/
+backend/.wrangler/
+backend/.dev.vars
+backend/.env

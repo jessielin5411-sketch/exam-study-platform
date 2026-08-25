@@ -62,12 +62,12 @@ testStudyPlan({
 
 function testDigitalNotebook(savedValue) {
   let ready;
-  const storage = savedValue === undefined ? null : JSON.stringify(savedValue);
+  let storage = savedValue === undefined ? null : JSON.stringify(savedValue);
   const sandbox = {
     console,
     localStorage: {
       getItem: (key) => key === "examMate.digitalWrongNotebook.v1" ? storage : null,
-      setItem: () => {},
+      setItem: (key, value) => { if (key === "examMate.digitalWrongNotebook.v1") storage = value; },
       removeItem: () => {}
     },
     document: {
@@ -81,6 +81,16 @@ function testDigitalNotebook(savedValue) {
   vm.runInNewContext(fs.readFileSync("digital-wrong-notebook.js", "utf8"), sandbox);
   ready();
   sandbox.ExamMateDigitalNotebook.render();
+  if (savedValue === undefined) {
+    const savedId = sandbox.ExamMateDigitalNotebook.saveFromCoach({
+      coachQuestionId: "photo-test", subjectId: "math", unit: "代數", reason: "concept",
+      question: "照片題目", correctAnswer: "先建立式子再檢查限制。", imageData: ""
+    });
+    const saved = JSON.parse(storage || "[]");
+    if (!savedId || saved.length !== 1 || !saved[0].aiAnalyzed || saved[0].reason !== "觀念不清") {
+      throw new Error("AI 分析結果無法選擇收藏到數位錯題本");
+    }
+  }
 }
 
 testDigitalNotebook(undefined);
@@ -219,12 +229,16 @@ function testAICoach() {
     setTimeout: () => 1,
     clearTimeout: () => {},
     confirm: () => true,
-    ExamMateLearning: { goToView() {}, renderWrongQuestions() {} },
+    ExamMateLearning: { goToView() {}, renderWrongQuestions() {}, addSimilarQuestions: () => 3 },
+    ExamMateDigitalNotebook: { saveFromCoach: () => "saved-digital-test" },
     examConfig: { aiCoach: { customQuestionEnabled: false, endpoint: "" } },
     examMateQuestionBank: {
       chinese: {
         id: "chinese", name: "國文", glyph: "文", theme: "chinese",
-        questions: [{ id: "coach-test", unit: "閱讀理解", ability: "找出文本證據", difficulty: 4, prompt: "測試題", options: ["甲", "乙", "丙", "丁"], answer: 1, explanation: "測試解析", commonError: "只憑印象作答" }]
+        questions: [
+          { id: "coach-test", unit: "閱讀理解", ability: "找出文本證據", difficulty: 4, prompt: "測試題", options: ["甲", "乙", "丙", "丁"], answer: 1, explanation: "測試解析", commonError: "只憑印象作答" },
+          { id: "coach-similar", unit: "閱讀理解", ability: "轉移文本證據", difficulty: 4, prompt: "相似測試題", options: ["甲", "乙", "丙", "丁"], answer: 2, explanation: "相似題解析", commonError: "沒有核對文本" }
+        ]
       },
       english: { id: "english", name: "英文", glyph: "En", theme: "english", questions: [] },
       math: { id: "math", name: "數學", glyph: "數", theme: "math", questions: [] },
@@ -235,10 +249,11 @@ function testAICoach() {
   sandbox.window = sandbox;
   vm.runInNewContext(fs.readFileSync("ai-coach.js", "utf8"), sandbox);
   ready();
-  if (!sandbox.ExamMateAICoach || typeof sandbox.ExamMateAICoach.render !== "function" || typeof sandbox.ExamMateAICoach.open !== "function" || typeof sandbox.ExamMateAICoach.openDigital !== "function" || typeof sandbox.ExamMateAICoach.getPrompt !== "function") {
+  if (!sandbox.ExamMateAICoach || typeof sandbox.ExamMateAICoach.render !== "function" || typeof sandbox.ExamMateAICoach.open !== "function" || typeof sandbox.ExamMateAICoach.openDigital !== "function" || typeof sandbox.ExamMateAICoach.openPhoto !== "function" || typeof sandbox.ExamMateAICoach.getPrompt !== "function") {
     throw new Error("AI 教練初始化失敗");
   }
   sandbox.ExamMateAICoach.render();
+  values.set("examMate.wrongQuestions.v1", JSON.stringify([{ subjectId: "chinese", questionId: "coach-test", selectedIndex: 0, wrongCount: 1 }]));
   sandbox.ExamMateAICoach.open("chinese", "coach-test", 0);
   if (!elements["#coach-session-panel"].innerHTML.includes("第 1／5 步") || elements["#coach-session-panel"].innerHTML.includes("完整解析")) {
     throw new Error("AI 教練第一步不符合先診斷、後解析原則");
@@ -260,6 +275,9 @@ function testAICoach() {
   const chineseFields = ["■ 修辭", "■ 詞語", "■ 成語", "■ 文言文", "■ 閱讀理解", "■ 作者觀點", "■ 命題技巧", "【會考常考】", "【容易混淆】", "【閱讀技巧】"];
   if (!fixedHeadings.every((heading) => finalReport.includes(heading))) throw new Error("AI 教練固定九段診斷不完整");
   if (!chineseFields.every((heading) => finalReport.includes(heading))) throw new Error("AI 教練國文科專屬分析不完整");
+  if (!finalReport.includes("建立相似題練習") || !finalReport.includes("已在題庫錯題本")) throw new Error("AI 分析完成後缺少收藏與相似題操作");
+  click("[data-coach-build-similar]");
+  if (!elements["#coach-session-panel"].innerHTML.includes("已加入 3 題")) throw new Error("AI 相似題沒有加入五科加強題本");
   const promptChecks = {
     chinese: ["■ 修辭", "■ 文言文", "【會考常考】", "【閱讀技巧】"],
     english: ["■ 文法", "■ 時態", "【會考文法】", "【重要單字】"],
@@ -295,7 +313,7 @@ function testAICoach() {
       !["整理知識", "會考重點", "比較表", "一句口訣", "時間軸", "常考整理"].every((text) => elements["#coach-session-panel"].innerHTML.includes(text))) {
     throw new Error("雙 AI 老師的分工報告不完整");
   }
-  click("[data-coach-source]", { coachSource: "photo" });
+  sandbox.ExamMateAICoach.openPhoto();
   if (!elements["#coach-question-list"].innerHTML.includes("coach-photo-form") || !elements["#coach-question-list"].innerHTML.includes("照片辨識後端")) {
     throw new Error("拍照詢問題目來源沒有正確顯示");
   }
@@ -316,11 +334,13 @@ const result = {
   wrongCenterPanelCount: (html.match(/class="wrong-center-panel/g) || []).length,
   digitalNotebookScriptCount: (html.match(/src="digital-wrong-notebook\.js(?:\?[^\"]*)?"/g) || []).length,
   weeklyReminderScriptCount: (html.match(/src="weekly-plan-reminder\.js"/g) || []).length,
-  appearanceBackupScriptCount: (html.match(/src="appearance-backup\.js"/g) || []).length,
+  appearanceBackupScriptCount: (html.match(/src="appearance-backup\.js(?:\?[^\"]*)?"/g) || []).length,
   aiCoachViewCount: (html.match(/id="coach-view"/g) || []).length,
   aiCoachNavigationCount: (html.match(/data-app-view="coach"/g) || []).length,
   aiCoachSourceCount: (html.match(/data-coach-source="(wrong|digital|photo)"/g) || []).length,
   aiTeacherCardCount: (html.match(/class="coach-teacher-card/g) || []).length,
+  aiWrongFlowCount: (html.match(/class="ai-wrong-flow"/g) || []).length,
+  aiPracticeCardCount: (fs.readFileSync("learning.js", "utf8").match(/class="subject-task-card subject-ai-card/g) || []).length,
   aiCoachScriptCount: (html.match(/src="ai-coach\.js(?:\?[^\"]*)?"/g) || []).length,
   aiCoachStepCount: (aiCoachSource.match(/function renderStage(One|Two|Three|Four|Five)\(/g) || []).length,
   aiCoachFixedHeadingCount: (aiCoachSource.match(/[①②③④⑤⑥⑦⑧⑨] /g) || []).length,
@@ -346,6 +366,7 @@ if (duplicateIds.length || missingScripts.length || result.planViewCount !== 1 |
   result.appearanceBackupScriptCount !== 1 || result.themeChoiceCount !== 2 ||
   result.aiCoachViewCount !== 1 || result.aiCoachNavigationCount < 6 ||
   result.aiCoachSourceCount !== 3 || result.aiTeacherCardCount !== 2 ||
+  result.aiWrongFlowCount !== 1 || result.aiPracticeCardCount !== 1 ||
   result.aiCoachScriptCount !== 1 || result.aiCoachStepCount !== 5 ||
   result.aiCoachFixedHeadingCount !== 9 || result.aiCoachSubjectPromptCount < 5 ||
   cssBraceBalance !== 0 || !result.cssNeverNegative ||

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#142a66">
   <meta name="description" content="ExamMate 國中會考五科自主學習平台，陪你每天完成一點、穩定前進。">
   <title>ExamMate｜國中會考五科自主學習平台</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20260825-1">
 </head>
 <body>
   <a class="skip-link" href="#main-content">跳到主要內容</a>
@@ -606,8 +606,8 @@
           </div>
           <div class="coach-source-tabs" role="tablist" aria-label="題目來源">
             <button id="coach-wrong-source" class="is-active" type="button" data-coach-source="wrong" aria-pressed="true">題庫錯題</button>
-            <button id="coach-digital-source" type="button" data-coach-source="digital" aria-pressed="false">數位錯題本</button>
-            <button id="coach-photo-source" type="button" data-coach-source="photo" aria-pressed="false">拍照詢問</button>
+            <button id="coach-digital-source" type="button" data-coach-source="digital" aria-pressed="false">AI 數位錯題本</button>
+            <button id="coach-photo-source" type="button" data-coach-source="photo" aria-pressed="false">拍照建立錯題</button>
           </div>
           <div id="coach-question-list" class="coach-question-list"></div>
           <div class="coach-custom-note">
@@ -650,7 +650,7 @@
           <span aria-hidden="true">↺</span><strong>題庫自動錯題</strong><small>作答後自動收集</small>
         </button>
         <button id="digital-wrong-tab" class="wrong-center-tab" type="button" role="tab" aria-selected="false" aria-controls="digital-wrong-panel" data-wrong-tab="digital">
-          <span aria-hidden="true">簿</span><strong>我的數位錯題本</strong><small>拍照、分類與分析</small>
+          <span aria-hidden="true">AI</span><strong>AI 數位錯題本</strong><small>拍照分析、收藏與再練習</small>
         </button>
       </div>
 
@@ -668,10 +668,25 @@
           <button id="reset-digital-wrong" class="button button-secondary button-small" type="button">重新建立錯題本</button>
         </div>
 
+        <section class="ai-wrong-flow" aria-labelledby="ai-wrong-flow-title">
+          <div class="ai-wrong-flow-copy">
+            <p class="section-label">PHOTO TO MASTERY</p>
+            <h2 id="ai-wrong-flow-title">一張照片，變成真正會做的複習題</h2>
+            <p>先讓 AI 科目老師找考點與錯因，再由筆記老師整理重點；看完分析後，由你決定是否收藏與加入相似題練習。</p>
+            <button class="button button-coach" type="button" data-open-coach-photo><span aria-hidden="true">▣</span>拍照，開始 AI 錯題分析</button>
+          </div>
+          <ol class="ai-wrong-flow-steps" aria-label="AI 錯題整理流程">
+            <li><b>1</b><span><strong>拍照匯入</strong><small>包含題幹、圖表與選項</small></span></li>
+            <li><b>2</b><span><strong>AI 分析</strong><small>考點、錯因、解題與陷阱</small></span></li>
+            <li><b>3</b><span><strong>選擇收藏</strong><small>理解後再存入錯題本</small></span></li>
+            <li><b>4</b><span><strong>相似題再練</strong><small>加入對應科目的 AI 題本</small></span></li>
+          </ol>
+        </section>
+
         <section class="digital-wrong-dashboard" aria-labelledby="weakness-dashboard-title">
           <div class="digital-dashboard-heading">
             <div><p class="section-label">WEAKNESS DASHBOARD</p><h2 id="weakness-dashboard-title">我的加強方向</h2><p id="digital-analysis-summary">先記下第一題，系統就能開始整理需要加強的科目與單元。</p></div>
-            <button id="open-digital-entry" class="button button-primary" type="button"><span aria-hidden="true">＋</span>新增錯題</button>
+            <button id="open-digital-entry" class="button button-secondary" type="button"><span aria-hidden="true">＋</span>手動新增錯題</button>
           </div>
           <div class="digital-stat-grid">
             <article><span>已收錄</span><strong id="digital-total-count">0</strong><small>題錯題</small></article>
@@ -700,7 +715,7 @@
             <input id="digital-wrong-id" name="itemId" type="hidden">
             <input id="digital-image-data" name="imageData" type="hidden">
             <div class="digital-form-heading">
-              <div><p class="section-label">ADD A WRONG QUESTION</p><h2 id="digital-entry-title">記下這一題為什麼會錯</h2><p>照片只是協助回想；真正有價值的是分類錯因與寫下正確觀念。</p></div>
+              <div><p class="section-label">MANUAL WRONG QUESTION</p><h2 id="digital-entry-title">手動記下這一題</h2><p>適合沒有 AI 分析、或已經和老師確認過答案的題目；拍照分析請使用上方入口。</p></div>
               <button id="close-digital-entry" class="icon-button" type="button" aria-label="關閉新增錯題表單">×</button>
             </div>
 
@@ -953,7 +968,7 @@
 
     <section class="backup-section" aria-labelledby="backup-title">
       <div class="appearance-section-heading">
-        <div><h3 id="backup-title">學生／家長自行備份</h3><p>備份會包含個人資料、日期、學習進度、複習計畫、題庫錯題、AI 教練紀錄，以及數位錯題本中的圖片。</p></div>
+        <div><h3 id="backup-title">學生／家長自行備份</h3><p>備份會包含個人資料、日期、學習進度、複習計畫、題庫錯題、AI 教練紀錄、AI 相似題，以及數位錯題本中的圖片。</p></div>
         <span id="last-backup-label">尚未備份</span>
       </div>
       <div class="backup-option-grid">
@@ -982,7 +997,7 @@
   <noscript>
     <div class="noscript-message">此網站需要啟用 JavaScript 才能顯示倒數與儲存資料。</div>
   </noscript>
-  <script src="config.js"></script>
+  <script src="config.js?v=20260825-1"></script>
   <script src="script.js"></script>
   <script src="question-bank.js"></script>
   <script src="exam-question-bank.js"></script>
@@ -993,10 +1008,10 @@
   <script src="chinese-handbook.js"></script>
   <script src="english-handbook.js"></script>
   <script src="study-plan.js"></script>
-  <script src="digital-wrong-notebook.js?v=20260731-2"></script>
-  <script src="learning.js"></script>
-  <script src="ai-coach.js?v=20260731-2"></script>
+  <script src="digital-wrong-notebook.js?v=20260825-1"></script>
+  <script src="learning.js?v=20260825-1"></script>
+  <script src="ai-coach.js?v=20260825-1"></script>
   <script src="weekly-plan-reminder.js"></script>
-  <script src="appearance-backup.js"></script>
+  <script src="appearance-backup.js?v=20260825-1"></script>
 </body>
 </html>

@@ -20,6 +20,7 @@
     "examMate.studyPlan.v1",
     "examMate.digitalWrongNotebook.v1",
     "examMate.aiCoach.v1",
+    "examMate.aiPracticeQuestions.v1",
     "examMate.weeklyPlanPrompt.v1",
     THEME_KEY
   ];

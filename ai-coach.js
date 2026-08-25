@@ -12,6 +12,7 @@
   const COACH_KEY = "examMate.aiCoach.v1";
   const WRONG_KEY = "examMate.wrongQuestions.v1";
   const DIGITAL_KEY = "examMate.digitalWrongNotebook.v1";
+  const AI_PRACTICE_KEY = "examMate.aiPracticeQuestions.v1";
   const SUBJECTS = window.examMateQuestionBank || {};
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => Array.from(document.querySelectorAll(selector));
@@ -124,7 +125,16 @@
   }
 
   function findQuestion(subjectId, questionId) {
-    return SUBJECTS[subjectId]?.questions?.find((question) => question.id === questionId) || null;
+    const bankQuestion = SUBJECTS[subjectId]?.questions?.find((question) => question.id === questionId);
+    if (bankQuestion) return bankQuestion;
+    try {
+      const personalized = JSON.parse(localStorage.getItem(AI_PRACTICE_KEY) || "[]");
+      return Array.isArray(personalized)
+        ? personalized.find((question) => question.subjectId === subjectId && question.id === questionId) || null
+        : null;
+    } catch (error) {
+      return null;
+    }
   }
 
   function readDigitalQuestions() {
@@ -495,14 +505,17 @@
 
   function buildSubjectReport(subject, question, method, comparison) {
     const prompt = SUBJECT_PROMPTS[subject.id] || SUBJECT_PROMPTS.science;
+    const aiFields = question.aiAnalysis?.subjectFields || {};
     return `<section class="coach-subject-report" data-coach-subject-report="${escapeHtml(subject.id)}">
       <div class="coach-subject-report-heading"><p class="section-label">${escapeHtml(subject.name.toUpperCase())} SUBJECT TEACHER</p><h2>${escapeHtml(subject.name)}科解題分析</h2><p>科目老師依${escapeHtml(subject.name)}科會考命題特性補充，不套用其他科目的解題方式。</p></div>
-      <div class="coach-subject-field-grid">${prompt.fields.map((field) => `<article><h3>■ ${escapeHtml(field)}</h3><p>${escapeHtml(getSubjectFieldContent(subject.id, field, question, method, comparison))}</p></article>`).join("")}</div>
+      <div class="coach-subject-field-grid">${prompt.fields.map((field) => `<article><h3>■ ${escapeHtml(field)}</h3><p>${escapeHtml(aiFields[field] || getSubjectFieldContent(subject.id, field, question, method, comparison))}</p></article>`).join("")}</div>
     </section>`;
   }
 
   function buildNoteTeacherReport(subject, question, method, comparison) {
     const prompt = SUBJECT_PROMPTS[subject.id] || SUBJECT_PROMPTS.science;
+    const aiToolkit = question.aiAnalysis?.noteToolkit || {};
+    const aiSummaries = question.aiAnalysis?.summaries || {};
     const toolkit = [
       ["整理知識", `${question.unit}：${question.ability || "把題目條件和核心觀念連起來"}`],
       ["會考重點", method.note],
@@ -513,8 +526,8 @@
     ];
     return `<section class="coach-note-teacher-report" aria-label="AI 筆記老師整理">
       <div class="coach-subject-report-heading"><p class="section-label">AI NOTE TEACHER</p><h2>這題的複習筆記</h2><p>把剛才的解題過程整理成之後能快速複習的內容。</p></div>
-      <div class="coach-note-toolkit">${toolkit.map(([label, content]) => `<article><h3>${escapeHtml(label)}</h3><p>${escapeHtml(content)}</p></article>`).join("")}</div>
-      <div class="coach-subject-summary">${prompt.summaries.map((label) => `<article><h3>【${escapeHtml(label)}】</h3><p>${escapeHtml(getSubjectSummaryContent(subject.id, label, question, method, comparison))}</p></article>`).join("")}</div>
+      <div class="coach-note-toolkit">${toolkit.map(([label, content]) => `<article><h3>${escapeHtml(label)}</h3><p>${escapeHtml(aiToolkit[label] || content)}</p></article>`).join("")}</div>
+      <div class="coach-subject-summary">${prompt.summaries.map((label) => `<article><h3>【${escapeHtml(label)}】</h3><p>${escapeHtml(aiSummaries[label] || getSubjectSummaryContent(subject.id, label, question, method, comparison))}</p></article>`).join("")}</div>
     </section>`;
   }
 
@@ -523,7 +536,7 @@
     const comparison = getComparison(question);
     const reason = getReasonLabel(state.session.reason);
     const commonError = question.commonError || "只憑熟悉感作答，沒有回到題幹找證據。";
-    const sections = [
+    const defaultSections = [
       question.ability || `${question.unit}的核心觀念與判斷能力`,
       `你選擇的主要錯因是「${reason}」。這題最可能卡在：${commonError}`,
       question.explanation,
@@ -534,6 +547,8 @@
       `${method.note} 本題必須掌握：${question.ability || question.unit}。`,
       `${getAvoidance(state.session.reason)} 做對一題不只是記住答案，而是記住這次用對的方法。`
     ];
+    const aiFixed = question.aiAnalysis?.fixedSections || {};
+    const sections = COACH_FIXED_HEADINGS.map((heading, index) => aiFixed[heading] || aiFixed[String(index + 1)] || defaultSections[index]);
     return `<section class="coach-fixed-report is-subject-teacher-report" aria-label="AI 科目老師分析">
       <div class="coach-fixed-report-heading coach-report-teacher-heading"><span class="coach-teacher-avatar" aria-hidden="true">解</span><div><p class="section-label">AI SUBJECT TEACHER</p><h2>AI 科目老師的診斷</h2><p>先完成命題分析、錯因定位、解題教學與陷阱提醒。</p></div></div>
       <div class="coach-report-section-list">${COACH_FIXED_HEADINGS.slice(0, 5).map((heading, index) => `<article><h3>${escapeHtml(heading)}</h3><p>${escapeHtml(sections[index])}</p></article>`).join("")}</div>
@@ -623,10 +638,29 @@
         <p>${escapeHtml(question.explanation)}</p>
       </article>
       ${buildFixedReport(subject, question)}
+      ${renderLearningActions(subject, question)}
       <div class="coach-stage-actions coach-finish-actions">
         ${correct && state.session.source === "wrong" ? `<button class="button button-secondary" type="button" data-coach-mastered>標記這題已掌握</button>` : `<button class="button button-secondary" type="button" data-app-view="wrong">回錯題本複習</button>`}
         <button class="button button-primary" type="button" data-coach-another>再陪我看一題</button>
       </div>`;
+  }
+
+  // 分析完成後才詢問學生是否收藏，避免每張照片都自動堆進錯題本。
+  function renderLearningActions(subject, question) {
+    const session = state.session;
+    const canSave = session.source === "photo";
+    const alreadySaved = ["wrong", "digital"].includes(session.source) || Boolean(session.savedDigitalId);
+    const saveTitle = session.source === "wrong" ? "已在題庫錯題本" : alreadySaved ? "已在數位錯題本" : canSave ? "存入數位錯題本" : "示範題不需收藏";
+    const saveDescription = session.source === "wrong" ? "原題會繼續保留，直到你標記已掌握。" : alreadySaved ? "之後可以依複習日期再次練習。" : canSave ? "保留照片、AI 重點與下次提醒。" : "可以建立相似題，將觀念帶回五科練習。";
+    const similarCount = Array.isArray(question.similarQuestions) ? question.similarQuestions.length : 0;
+    return `<section class="coach-learning-actions" aria-label="分析完成後的學習選擇">
+      <div class="coach-learning-actions-heading"><p class="section-label">YOU DECIDE THE NEXT STEP</p><h2>這次分析，要怎麼繼續使用？</h2><p>收藏與相似題都由你決定；未收藏的拍照題不會自動出現在錯題本。</p></div>
+      <div class="coach-learning-action-grid">
+        <article class="${alreadySaved ? "is-complete" : ""}"><span aria-hidden="true">簿</span><div><h3>${saveTitle}</h3><p>${saveDescription}</p></div>${canSave ? `<button class="button button-secondary button-small" type="button" data-coach-save-wrong ${alreadySaved ? "disabled" : ""}>${alreadySaved ? "已收藏" : "選擇收藏"}</button>` : `<b>${alreadySaved ? "已收藏" : "不用收藏"}</b>`}</article>
+        <article class="${session.similarAdded ? "is-complete" : ""}"><span aria-hidden="true">練</span><div><h3>加入 ${escapeHtml(subject.name)} AI 加強題本</h3><p>${similarCount ? `AI 已設計 ${similarCount} 題同觀念題。` : "若 AI 未附題目，會先安排同單元題庫練習。"}</p></div><button class="button button-primary button-small" type="button" data-coach-build-similar ${session.similarAdded ? "disabled" : ""}>${session.similarAdded ? `已加入 ${session.similarAdded} 題` : "建立相似題練習"}</button></article>
+      </div>
+      ${session.learningActionStatus ? `<p class="coach-learning-action-status" role="status">${escapeHtml(session.learningActionStatus)}</p>` : ""}
+    </section>`;
   }
 
   function renderSession() {
@@ -707,6 +741,8 @@
       explanation: sourceQuestion.explanation || "AI 已完成題目辨識；請依考點、題目條件與解題步驟重新核對。",
       commonError: sourceQuestion.commonError || formValues.studentThinking || "需要先確認題目限制與使用的核心觀念。",
       imageData: state.photoImage,
+      similarQuestions: Array.isArray(response?.similarQuestions) ? response.similarQuestions : Array.isArray(sourceQuestion.similarQuestions) ? sourceQuestion.similarQuestions : [],
+      aiAnalysis: response?.analysis || sourceQuestion.analysis || null,
       openResponse: options.length < 2 || !Number.isInteger(answer)
     };
     state.session = {
@@ -720,7 +756,10 @@
       understanding: null,
       retryCorrect: null,
       stage: 1,
-      recorded: false
+      recorded: false,
+      savedDigitalId: "",
+      similarAdded: 0,
+      learningActionStatus: ""
     };
     state.photoBusy = false;
     state.photoStatus = "";
@@ -774,6 +813,61 @@
     }
   }
 
+  function saveCurrentToNotebook() {
+    const session = state.session;
+    const question = getSessionQuestion(session);
+    const subject = SUBJECTS[session?.subjectId];
+    if (!session || !question || !subject || session.source !== "photo") return;
+    const itemId = window.ExamMateDigitalNotebook?.saveFromCoach?.({
+      coachQuestionId: question.id,
+      subjectId: subject.id,
+      unit: question.unit,
+      source: "拍照 AI 分析",
+      reason: session.reason,
+      question: question.prompt,
+      myAnswer: state.photoDraft.studentThinking || question.commonError || "",
+      correctAnswer: question.correctAnswerText || question.explanation,
+      explanation: question.explanation,
+      reflection: getAvoidance(session.reason),
+      imageData: question.imageData || ""
+    });
+    if (!itemId) {
+      session.learningActionStatus = "目前無法收藏這題，請確認瀏覽器儲存空間後再試。";
+      return renderSession();
+    }
+    session.savedDigitalId = itemId;
+    session.learningActionStatus = "已收藏到 AI 數位錯題本，系統會安排 3 天後再複習。";
+    renderQuestionList();
+    renderSession();
+  }
+
+  function buildSimilarPractice() {
+    const session = state.session;
+    const question = getSessionQuestion(session);
+    const subject = SUBJECTS[session?.subjectId];
+    if (!session || !question || !subject || session.similarAdded) return;
+    let candidates = Array.isArray(question.similarQuestions) ? question.similarQuestions : [];
+    if (!candidates.length) {
+      candidates = subject.questions
+        .filter((item) => item.id !== question.id && (item.unit === question.unit || item.unitId === question.unitId))
+        .slice(0, 3);
+    }
+    if (!candidates.length) {
+      candidates = subject.questions.filter((item) => item.id !== question.id && Number(item.difficulty || 0) >= 3).slice(0, 3);
+    }
+    const added = window.ExamMateLearning?.addSimilarQuestions?.({
+      subjectId: subject.id,
+      unit: question.unit,
+      sourceQuestionId: question.id,
+      questions: candidates
+    }) || 0;
+    session.similarAdded = added;
+    session.learningActionStatus = added
+      ? `已加入 ${subject.name}的 AI 加強題本，共 ${added} 題；回到五科學習即可開始。`
+      : "目前沒有可加入的相似題；待 AI 後端回傳題目後即可建立。";
+    renderSession();
+  }
+
   function chooseAnother() {
     state.session = null;
     renderQuestionList();
@@ -805,6 +899,14 @@
     state.source = "digital";
     window.ExamMateLearning?.goToView("coach");
     startDigitalSession(digitalId);
+  }
+
+  function openPhoto() {
+    state.source = "photo";
+    state.session = null;
+    window.ExamMateLearning?.goToView("coach");
+    renderQuestionList();
+    $("#coach-question-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function updatePhotoDraft(form = $("#coach-photo-form")) {
@@ -896,11 +998,11 @@
           questionText: values.questionText,
           studentThinking: values.studentThinking,
           imageData: state.photoImage,
-          prompt: buildCoachPrompt(values.subjectId)
+          prompt: `${buildCoachPrompt(values.subjectId)} 請回傳 JSON：question 為辨識後題目；analysis 包含 fixedSections、subjectFields、noteToolkit、summaries；similarQuestions 為三題同考點、不同情境的四選一原創題。每題包含 id、unit、ability、difficulty、prompt、options、answer（0 到 3）、explanation、commonError。`
         })
       });
-      if (!response.ok) throw new Error(`照片分析服務暫時無法使用（${response.status}）。`);
-      const payload = await response.json();
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || `照片分析服務暫時無法使用（${response.status}）。`);
       if (!payload || typeof payload !== "object") throw new Error("照片分析結果格式不正確。");
       startPhotoSession(values.subjectId, payload, values);
     } catch (error) {
@@ -963,6 +1065,8 @@
       return renderSession();
     }
     if (event.target.closest("[data-coach-submit-retry]")) return completeSession();
+    if (event.target.closest("[data-coach-save-wrong]")) return saveCurrentToNotebook();
+    if (event.target.closest("[data-coach-build-similar]")) return buildSimilarPractice();
     if (event.target.closest("[data-coach-mastered]")) return markMastered();
     if (event.target.closest("[data-coach-another]")) return chooseAnother();
     if (event.target.closest("#reset-coach-data")) {
@@ -988,6 +1092,6 @@
     });
   }
 
-  window.ExamMateAICoach = { render, open, openDigital, getPrompt: buildCoachPrompt };
+  window.ExamMateAICoach = { render, open, openDigital, openPhoto, getPrompt: buildCoachPrompt };
   document.addEventListener("DOMContentLoaded", init);
 })();

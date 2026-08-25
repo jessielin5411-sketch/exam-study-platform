@@ -11,6 +11,7 @@
   const LEARNING_KEY = "examMate.learning.v1";
   const WRONG_KEY = "examMate.wrongQuestions.v1";
   const REVIEW_KEY = "examMate.unitReviews.v1";
+  const AI_PRACTICE_KEY = "examMate.aiPracticeQuestions.v1";
   const DAILY_SUBJECTS = ["chinese", "english", "math", "science", "social"];
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => Array.from(document.querySelectorAll(selector));
@@ -171,6 +172,7 @@
     progress: { date: todayKey(), completedSubjects: [] },
     reviewedUnits: [],
     wrongQuestions: [],
+    aiPracticeQuestions: [],
     practice: null,
     toastTimer: null
   };
@@ -215,6 +217,14 @@
     return Array.isArray(value) && value.every((item) => typeof item === "string");
   }
 
+  function validAiPracticeQuestion(item) {
+    return Boolean(item && DAILY_SUBJECTS.includes(item.subjectId) && typeof item.id === "string" &&
+      typeof item.unit === "string" && typeof item.prompt === "string" && item.prompt.trim() &&
+      Array.isArray(item.options) && item.options.length === 4 && item.options.every((option) => typeof option === "string") &&
+      Number.isInteger(item.answer) && item.answer >= 0 && item.answer < 4 &&
+      typeof item.explanation === "string" && item.explanation.trim() && typeof item.createdAt === "string");
+  }
+
   function loadLearningState() {
     state.progress = readJson(LEARNING_KEY, { date: todayKey(), completedSubjects: [] }, validProgress);
     if (state.progress.date !== todayKey()) {
@@ -224,6 +234,7 @@
     state.progress.completedSubjects = state.progress.completedSubjects.filter((id) => DAILY_SUBJECTS.includes(id));
     state.reviewedUnits = readJson(REVIEW_KEY, [], validReviewedUnits).filter((unitId) => Boolean(UNIT_REVIEWS[unitId]));
     state.wrongQuestions = readJson(WRONG_KEY, [], validWrongQuestions);
+    state.aiPracticeQuestions = readJson(AI_PRACTICE_KEY, [], (value) => Array.isArray(value) && value.every(validAiPracticeQuestion));
     const existingWrongQuestions = state.wrongQuestions.filter((item) => findQuestion(item.subjectId, item.questionId));
     if (existingWrongQuestions.length !== state.wrongQuestions.length) {
       state.wrongQuestions = existingWrongQuestions;
@@ -382,6 +393,7 @@
 
   function renderSubjectPage(subjectId) {
     const subject = SUBJECTS[subjectId];
+    const aiQuestions = state.aiPracticeQuestions.filter((question) => question.subjectId === subjectId);
     const isDaily = true;
     const completed = state.progress.completedSubjects.includes(subjectId);
     $("#subject-page-content").innerHTML = `
@@ -400,6 +412,11 @@
           <span class="subject-glyph" aria-hidden="true">題</span>
           <div><h2>會考實戰 10 題</h2><p>從 ${subject.questions.length} 題題庫選取中高難度題・包含圖表、情境與推論</p></div>
           <div><span class="time-chip">◷ 約 25 分鐘</span><button class="button button-secondary" type="button" data-start-bank="${subjectId}">開始實戰</button></div>
+        </article>
+        <article class="subject-task-card subject-ai-card ${aiQuestions.length ? "has-questions" : ""}" data-subject-theme="${subject.theme}">
+          <span class="subject-glyph" aria-hidden="true">AI</span>
+          <div><h2>AI 同觀念加強題本</h2><p>${aiQuestions.length ? `依你的錯題建立 ${aiQuestions.length} 題個人化練習` : "完成 AI 錯題分析後，可把相似題加入這裡"}</p></div>
+          <div><span class="time-chip">${aiQuestions.length ? `目前 ${aiQuestions.length} 題` : "尚未建立"}</span><button class="button ${aiQuestions.length ? "button-primary" : "button-secondary"}" type="button" data-start-ai-practice="${subjectId}" ${aiQuestions.length ? "" : "disabled"}>${aiQuestions.length ? "開始加強" : "等待加入"}</button></div>
         </article>
       </div>
       <section class="component-section" aria-labelledby="unit-list-title">
@@ -518,6 +535,46 @@
     return questions.slice(0, Math.min(count, questions.length));
   }
 
+  function normalizeAiQuestion(subjectId, question, sourceQuestionId, index) {
+    if (!question || !Array.isArray(question.options) || question.options.length !== 4) return null;
+    const answer = Number(question.answer);
+    if (!Number.isInteger(answer) || answer < 0 || answer > 3 || !String(question.prompt || "").trim()) return null;
+    const now = new Date().toISOString();
+    return {
+      id: `ai-${subjectId}-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 6)}`,
+      subjectId,
+      unit: String(question.unit || "AI 同觀念加強").trim(),
+      unitId: String(question.unitId || ""),
+      ability: String(question.ability || "把同一觀念運用在不同情境"),
+      difficulty: Math.min(5, Math.max(1, Number(question.difficulty) || 4)),
+      level: "ai-personalized",
+      prompt: String(question.prompt).trim(),
+      context: String(question.context || ""),
+      options: question.options.map((option) => String(option)),
+      answer,
+      explanation: String(question.explanation || "請回到題目條件，逐一核對使用的觀念與選項。"),
+      commonError: String(question.commonError || "只記住原題答案，沒有把觀念轉移到新情境。"),
+      sourceQuestionId: String(sourceQuestionId || ""),
+      createdAt: now,
+      aiGenerated: true
+    };
+  }
+
+  // AI 教練只把結構完整的四選一題放進個人題本，避免損壞五科練習流程。
+  function addSimilarQuestions(payload) {
+    if (!payload || !SUBJECTS[payload.subjectId] || !Array.isArray(payload.questions)) return 0;
+    loadLearningState();
+    const normalized = payload.questions
+      .slice(0, 5)
+      .map((question, index) => normalizeAiQuestion(payload.subjectId, question, payload.sourceQuestionId, index))
+      .filter(Boolean);
+    if (!normalized.length) return 0;
+    state.aiPracticeQuestions = [...normalized, ...state.aiPracticeQuestions].slice(0, 100);
+    if (!writeJson(AI_PRACTICE_KEY, state.aiPracticeQuestions)) return 0;
+    notify(`已加入 ${SUBJECTS[payload.subjectId].name} AI 加強題本，共 ${normalized.length} 題。`);
+    return normalized.length;
+  }
+
   function startPractice(subjectId, questions, dailyMode, sourceView) {
     const subject = SUBJECTS[subjectId];
     if (!subject || !questions.length) return;
@@ -554,7 +611,7 @@
     $("#practice-progress-bar").parentElement.setAttribute("aria-valuenow", String(progressPercent));
 
     $("#practice-card-host").innerHTML = `<article class="practice-card" data-subject-theme="${subject.theme}">
-      <div class="practice-card-head"><div class="question-badges"><span class="status-badge">${question.level === "cap" ? "會考素養題" : "單選題"}</span><span class="status-badge difficulty-badge">難度 ${question.difficulty || 2}／5</span>${question.visual ? `<span class="status-badge visual-badge">圖表題</span>` : ""}</div><span class="practice-hint">選好答案後再確認</span></div>
+      <div class="practice-card-head"><div class="question-badges"><span class="status-badge">${question.level === "cap" ? "會考素養題" : question.level === "ai-personalized" ? "AI 同觀念題" : "單選題"}</span><span class="status-badge difficulty-badge">難度 ${question.difficulty || 2}／5</span>${question.visual ? `<span class="status-badge visual-badge">圖表題</span>` : ""}</div><span class="practice-hint">選好答案後再確認</span></div>
       ${question.ability ? `<p class="ability-label">能力：${escapeHtml(question.ability)}</p>` : ""}
       ${question.audioText ? `<section class="listening-player" aria-label="英文聽力播放器">
         <div class="listening-player-copy"><span class="listening-wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div><strong>先聽再作答</strong><small>可重播，建議先不要看逐字稿</small></div></div>
@@ -689,7 +746,8 @@
   }
 
   function findQuestion(subjectId, questionId) {
-    return SUBJECTS[subjectId]?.questions.find((question) => question.id === questionId) || null;
+    return SUBJECTS[subjectId]?.questions.find((question) => question.id === questionId) ||
+      state.aiPracticeQuestions.find((question) => question.subjectId === subjectId && question.id === questionId) || null;
   }
 
   function renderWrongQuestions() {
@@ -779,6 +837,14 @@
       return startPractice(subjectId, getRandomQuestions(SUBJECTS[subjectId], 10, true), false, "subject");
     }
 
+    const aiPractice = event.target.closest("[data-start-ai-practice]");
+    if (aiPractice) {
+      loadLearningState();
+      const subjectId = aiPractice.dataset.startAiPractice;
+      const questions = state.aiPracticeQuestions.filter((question) => question.subjectId === subjectId);
+      return startPractice(subjectId, questions, false, "ai-practice");
+    }
+
     const option = event.target.closest("[data-answer-index]");
     if (option) return selectAnswer(Number(option.dataset.answerIndex));
     if (event.target.closest("[data-play-listening]")) {
@@ -859,6 +925,6 @@
     enableLearningApp();
   }
 
-  window.ExamMateLearning = { renderWrongQuestions, goToView };
+  window.ExamMateLearning = { renderWrongQuestions, goToView, addSimilarQuestions };
   document.addEventListener("DOMContentLoaded", initLearning);
 })();

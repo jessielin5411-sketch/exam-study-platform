@@ -32,6 +32,13 @@
     猜題: "把不確定的兩個選項逐一找證據排除，不只記住答案。",
     其他: "重新寫下錯因，找出下次遇到同類題時可以執行的一個動作。"
   };
+  const COACH_REASON_LABELS = {
+    reading: "題意判讀",
+    concept: "觀念不清",
+    confusion: "觀念不清",
+    process: "計算失誤",
+    guess: "猜題"
+  };
   const state = {
     items: [],
     editingId: null,
@@ -518,7 +525,49 @@
     showToast("已重新加入複習清單。");
   }
 
+  // AI 教練完成分析後，學生可以自行決定是否把結果收藏成錯題。
+  // 這裡只接收整理後的資料，不會直接把照片送往任何 AI 服務。
+  function saveFromCoach(payload) {
+    if (!payload || !SUBJECTS[payload.subjectId]) return null;
+    const question = String(payload.question || "").trim();
+    const correctAnswer = String(payload.correctAnswer || payload.explanation || "").trim();
+    if (!question || !correctAnswer) return null;
+    loadData();
+    const coachQuestionId = String(payload.coachQuestionId || "");
+    const existing = coachQuestionId ? state.items.find((item) => item.coachQuestionId === coachQuestionId) : null;
+    if (existing) return existing.id;
+    const now = new Date().toISOString();
+    const item = {
+      id: `digital-wrong-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      subjectId: payload.subjectId,
+      unit: String(payload.unit || "其他單元").trim() || "其他單元",
+      source: String(payload.source || "AI 錯題分析").trim() || "AI 錯題分析",
+      reason: COACH_REASON_LABELS[payload.reason] || String(payload.reasonLabel || "觀念不清"),
+      question,
+      myAnswer: String(payload.myAnswer || ""),
+      correctAnswer,
+      reflection: String(payload.reflection || "先找限制，再用證據；完成判斷後回題檢查。"),
+      status: "reviewing",
+      createdAt: now,
+      updatedAt: now,
+      nextReviewDate: addDays(3),
+      reviewCount: 0,
+      imageData: /^data:image\//.test(String(payload.imageData || "")) ? String(payload.imageData) : "",
+      coachQuestionId,
+      aiAnalyzed: true
+    };
+    state.items.unshift(item);
+    if (!saveData("瀏覽器空間不足，這題尚未存入錯題本；請先備份並移除不需要的圖片。")) {
+      state.items.shift();
+      return null;
+    }
+    render();
+    showToast("AI 分析已存入數位錯題本，3 天後會提醒複習。");
+    return item.id;
+  }
+
   function handleLibraryClick(event) {
+    if (event.target.closest("[data-open-coach-photo]")) return window.ExamMateAICoach?.openPhoto?.();
     if (event.target.closest("[data-open-digital-entry]")) return showEntryForm();
     const coach = event.target.closest("[data-coach-digital]");
     if (coach) return window.ExamMateAICoach?.openDigital?.(coach.dataset.coachDigital);
@@ -546,6 +595,7 @@
 
   function bindEvents() {
     $$("[data-wrong-tab]").forEach((button) => button.addEventListener("click", () => switchTab(button.dataset.wrongTab)));
+    $("[data-open-coach-photo]")?.addEventListener("click", () => window.ExamMateAICoach?.openPhoto?.());
     $("#open-digital-entry")?.addEventListener("click", () => showEntryForm());
     $("#close-digital-entry")?.addEventListener("click", closeEntryForm);
     $("#cancel-digital-edit")?.addEventListener("click", closeEntryForm);
@@ -584,7 +634,8 @@
     switchTab,
     reset: resetDamagedData,
     getItem: (id) => findItem(id),
-    getItems: () => [...state.items]
+    getItems: () => [...state.items],
+    saveFromCoach
   };
   document.addEventListener("DOMContentLoaded", init);
 })();
