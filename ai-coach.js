@@ -687,11 +687,12 @@
     const saveTitle = session.source === "wrong" ? "已在題庫錯題本" : alreadySaved ? "已在數位錯題本" : canSave ? "存入數位錯題本" : "示範題不需收藏";
     const saveDescription = session.source === "wrong" ? "原題會繼續保留，直到你標記已掌握。" : alreadySaved ? "之後可以依複習日期再次練習。" : canSave ? "保留照片、AI 重點與下次提醒。" : "可以建立相似題，將觀念帶回五科練習。";
     const similarCount = Array.isArray(question.similarQuestions) ? question.similarQuestions.length : 0;
+    const similarBusy = Boolean(session.similarBusy);
     return `<section class="coach-learning-actions" aria-label="分析完成後的學習選擇">
       <div class="coach-learning-actions-heading"><p class="section-label">YOU DECIDE THE NEXT STEP</p><h2>這次分析，要怎麼繼續使用？</h2><p>收藏與相似題都由你決定；未收藏的拍照題不會自動出現在錯題本。</p></div>
       <div class="coach-learning-action-grid">
         <article class="${alreadySaved ? "is-complete" : ""}"><span aria-hidden="true">簿</span><div><h3>${saveTitle}</h3><p>${saveDescription}</p></div>${canSave ? `<button class="button button-secondary button-small" type="button" data-coach-save-wrong ${alreadySaved ? "disabled" : ""}>${alreadySaved ? "已收藏" : "選擇收藏"}</button>` : `<b>${alreadySaved ? "已收藏" : "不用收藏"}</b>`}</article>
-        <article class="${session.similarAdded ? "is-complete" : ""}"><span aria-hidden="true">練</span><div><h3>加入 ${escapeHtml(subject.name)} AI 加強題本</h3><p>${similarCount ? `AI 已設計 ${similarCount} 題同觀念題。` : "若 AI 未附題目，會先安排同單元題庫練習。"}</p></div><button class="button button-primary button-small" type="button" data-coach-build-similar ${session.similarAdded ? "disabled" : ""}>${session.similarAdded ? `已加入 ${session.similarAdded} 題` : "建立相似題練習"}</button></article>
+        <article class="${session.similarAdded ? "is-complete" : ""}"><span aria-hidden="true">練</span><div><h3>加入 ${escapeHtml(subject.name)} AI 加強題本</h3><p>${similarCount ? `AI 已設計 ${similarCount} 題同觀念題。` : "按下後由 AI 依這題的考點設計新情境題，不只是重做原題。"}</p></div><button class="button button-primary button-small" type="button" data-coach-build-similar ${session.similarAdded || similarBusy ? "disabled" : ""}>${session.similarAdded ? `已加入 ${session.similarAdded} 題` : similarBusy ? "AI 正在出題…" : "建立 AI 相似題"}</button></article>
       </div>
       ${session.learningActionStatus ? `<p class="coach-learning-action-status" role="status">${escapeHtml(session.learningActionStatus)}</p>` : ""}
     </section>`;
@@ -875,20 +876,7 @@
     renderSession();
   }
 
-  function buildSimilarPractice() {
-    const session = state.session;
-    const question = getSessionQuestion(session);
-    const subject = SUBJECTS[session?.subjectId];
-    if (!session || !question || !subject || session.similarAdded) return;
-    let candidates = Array.isArray(question.similarQuestions) ? question.similarQuestions : [];
-    if (!candidates.length) {
-      candidates = subject.questions
-        .filter((item) => item.id !== question.id && (item.unit === question.unit || item.unitId === question.unitId))
-        .slice(0, 3);
-    }
-    if (!candidates.length) {
-      candidates = subject.questions.filter((item) => item.id !== question.id && Number(item.difficulty || 0) >= 3).slice(0, 3);
-    }
+  function saveSimilarPractice(session, question, subject, candidates) {
     const added = window.ExamMateLearning?.addSimilarQuestions?.({
       subjectId: subject.id,
       unit: question.unit,
@@ -898,8 +886,72 @@
     session.similarAdded = added;
     session.learningActionStatus = added
       ? `已加入 ${subject.name}的 AI 加強題本，共 ${added} 題；回到五科學習即可開始。`
-      : "目前沒有可加入的相似題；待 AI 後端回傳題目後即可建立。";
+      : "AI 題目格式不完整，因此沒有加入題本；請再試一次。";
     renderSession();
+  }
+
+  function getQuestionTextForSimilar(question) {
+    const options = Array.isArray(question.options)
+      ? question.options.map((option, index) => `${String.fromCharCode(65 + index)}. ${option}`).join("\n")
+      : "";
+    return [question.context, question.prompt || question.question, options].filter(Boolean).join("\n\n");
+  }
+
+  async function requestAiSimilarPractice(session, question, subject) {
+    const config = typeof examConfig !== "undefined" ? examConfig.aiCoach : null;
+    if (!config?.customQuestionEnabled || !config.endpoint) {
+      // 未啟用後端時仍保留可練習的退路；正式啟用後會優先請 AI 產生新情境題。
+      const fallback = subject.questions
+        .filter((item) => item.id !== question.id && (item.unit === question.unit || item.unitId === question.unitId))
+        .slice(0, 3);
+      if (fallback.length) {
+        session.learningActionStatus = "安全 AI 後端尚未連線，已先加入同單元題庫練習。";
+        return saveSimilarPractice(session, question, subject, fallback);
+      }
+      session.learningActionStatus = "目前尚未連接安全 AI 後端，無法建立新的同觀念題。";
+      return renderSession();
+    }
+
+    session.similarBusy = true;
+    session.learningActionStatus = "AI 科目老師正在根據錯因與考點設計新的同觀念題…";
+    renderSession();
+    try {
+      const response = await fetch(config.endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "exam-coach-photo-question",
+          subjectId: subject.id,
+          unit: question.unit || "同觀念加強",
+          questionText: getQuestionTextForSimilar(question),
+          studentThinking: `學生的錯誤原因：${getReason(session.reason).label}。請只依核心考點設計新的情境，不要重複原題敘述。`,
+          imageData: "",
+          prompt: `${buildCoachPrompt(subject.id)} 這是已完成分析的錯題。請回傳 JSON，similarQuestions 必須提供 3 題原創四選一題，題幹須換成不同生活情境但考同一能力。每題包含 unit、ability、difficulty、prompt、options、answer（0 到 3）、explanation、commonError。`
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || `AI 出題服務暫時無法使用（${response.status}）。`);
+      const candidates = Array.isArray(payload?.similarQuestions) ? payload.similarQuestions : [];
+      if (!candidates.length) throw new Error("AI 沒有回傳可用的相似題，請稍後再試。");
+      question.similarQuestions = candidates;
+      session.similarBusy = false;
+      saveSimilarPractice(session, question, subject, candidates);
+    } catch (error) {
+      session.similarBusy = false;
+      session.learningActionStatus = error.message || "AI 相似題建立失敗，請稍後再試。";
+      renderSession();
+    }
+  }
+
+  function buildSimilarPractice() {
+    const session = state.session;
+    const question = getSessionQuestion(session);
+    const subject = SUBJECTS[session?.subjectId];
+    if (!session || !question || !subject || session.similarAdded) return;
+    let candidates = Array.isArray(question.similarQuestions) ? question.similarQuestions : [];
+    // 拍照題在第一次分析時已拿到 AI 相似題，可立即收藏；其他錯題則在學生明確點擊後才呼叫 AI。
+    if (candidates.length) return saveSimilarPractice(session, question, subject, candidates);
+    requestAiSimilarPractice(session, question, subject);
   }
 
   function chooseAnother() {

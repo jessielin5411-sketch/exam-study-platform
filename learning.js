@@ -312,7 +312,8 @@
   function goToView(viewName) {
     if (!hasProfile()) return;
     // 「AI 教練」已併入錯題整合中心；保留 coach 別名，讓既有錯題按鈕仍可正常帶學生進入同一頁。
-    const targetView = viewName === "coach" ? "wrong" : viewName;
+    // 單元重點講義先保留資料，這一版不在學生流程中呈現；舊按鈕若仍存在，安全帶回科目頁。
+    const targetView = viewName === "coach" ? "wrong" : viewName === "unit-review" ? "subject" : viewName;
     ["dashboard-view", "plan-view", "subjects-view", "subject-view", "unit-review-view", "practice-view", "wrong-view", "wrong-library-view"].forEach((id) => {
       const view = $("#" + id);
       if (view) view.hidden = true;
@@ -335,10 +336,6 @@
       $("#subject-view").hidden = false;
       renderSubjectPage(state.currentSubjectId);
     }
-    if (targetView === "unit-review") {
-      $("#unit-review-view").hidden = false;
-      renderUnitReviewPage(state.currentSubjectId, state.currentUnitId);
-    }
     if (targetView === "practice") $("#practice-view").hidden = false;
     if (targetView === "wrong") {
       $("#wrong-view").hidden = false;
@@ -348,7 +345,7 @@
     }
 
     state.currentView = targetView;
-    setActiveNavigation(targetView === "subject" || targetView === "unit-review" || targetView === "practice" ? "subjects" : targetView);
+    setActiveNavigation(targetView === "subject" || targetView === "practice" ? "subjects" : targetView);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -398,7 +395,7 @@
     $("#subject-page-content").innerHTML = `
       <section class="subject-hero" data-subject-theme="${subject.theme}">
         <span class="subject-glyph" aria-hidden="true">${subject.glyph}</span>
-        <div><p class="section-label">DAILY SUBJECT</p><h1 id="subject-page-title">${subject.name}</h1><p>${subject.description}，先看重點，再用題目確認理解。</p></div>
+        <div><p class="section-label">DAILY SUBJECT</p><h1 id="subject-page-title">${subject.name}</h1><p>${subject.description}，用實戰題找出弱點，再讓 AI 帶你練到懂。</p></div>
         <div class="subject-summary"><span>今日狀態</span><strong>${completed ? "已完成" : "待完成"}</strong></div>
       </section>
       <div class="subject-action-grid">
@@ -407,27 +404,25 @@
           <div><h2>${subject.name}今日任務</h2><p>每日精選 3 題・完成後更新今日紀錄</p></div>
           <div><span class="time-chip">◷ 約 10 分鐘</span><button class="button button-primary" type="button" data-start-mixed="${subjectId}">${completed ? "再練一次" : "開始練習"}</button></div>
         </article>
-        <article class="subject-task-card subject-bank-card" data-subject-theme="${subject.theme}">
-          <span class="subject-glyph" aria-hidden="true">題</span>
-          <div><h2>會考實戰 10 題</h2><p>從 ${subject.questions.length} 題題庫選取中高難度題・包含圖表、情境與推論</p></div>
-          <div><span class="time-chip">◷ 約 25 分鐘</span><button class="button button-secondary" type="button" data-start-bank="${subjectId}">開始實戰</button></div>
-        </article>
         <article class="subject-task-card subject-ai-card ${aiQuestions.length ? "has-questions" : ""}" data-subject-theme="${subject.theme}">
           <span class="subject-glyph" aria-hidden="true">AI</span>
-          <div><h2>AI 同觀念加強題本</h2><p>${aiQuestions.length ? `依你的錯題建立 ${aiQuestions.length} 題個人化練習` : "完成 AI 錯題分析後，可把相似題加入這裡"}</p></div>
-          <div><span class="time-chip">${aiQuestions.length ? `目前 ${aiQuestions.length} 題` : "尚未建立"}</span><button class="button ${aiQuestions.length ? "button-primary" : "button-secondary"}" type="button" data-start-ai-practice="${subjectId}" ${aiQuestions.length ? "" : "disabled"}>${aiQuestions.length ? "開始加強" : "等待加入"}</button></div>
+          <div><h2>AI 同觀念加強題本</h2><p>${aiQuestions.length ? `依你的錯題建立 ${aiQuestions.length} 題個人化練習；答錯後可持續增加新題。` : "先從錯題整合建立同觀念題，之後會在這裡持續練習。"}</p></div>
+          <div><span class="time-chip">${aiQuestions.length ? `目前 ${aiQuestions.length} 題` : "先建立錯題"}</span><button class="button ${aiQuestions.length ? "button-primary" : "button-secondary"}" type="button" data-start-ai-practice="${subjectId}" ${aiQuestions.length ? "" : "disabled"}>${aiQuestions.length ? "開始 AI 加強" : "等待加入"}</button></div>
+        </article>
+        <article class="subject-task-card subject-bank-card" data-subject-theme="${subject.theme}">
+          <span class="subject-glyph" aria-hidden="true">題</span>
+          <div><h2>108～114 會考實戰</h2><p>依民國 108～114 年命題趨勢隨機抽題；每次題組不同，著重圖表、情境與推論。</p></div>
+          <div><span class="time-chip">◷ 10 題・約 25 分鐘</span><button class="button button-secondary" type="button" data-start-historical="${subjectId}">隨機開始</button></div>
         </article>
       </div>
       <section class="component-section" aria-labelledby="unit-list-title">
-        <div class="section-heading compact-heading"><div><p class="section-label">UNIT REVIEW</p><h2 id="unit-list-title">單元重點複習</h2></div><p class="section-support">先看三個重點，再開始單元練習</p></div>
+        <div class="section-heading compact-heading"><div><p class="section-label">UNIT PRACTICE</p><h2 id="unit-list-title">單元練習</h2></div><p class="section-support">選一個想加強的單元，直接開始作答</p></div>
         <div class="unit-review-list">
           ${subject.units.map((unit, index) => {
             const unitQuestions = subject.questions.filter((question) => question.unitId === unit.id || question.unit === unit.name);
-            const reviewed = state.reviewedUnits.includes(unit.id);
-            const hasHandbook = Boolean(UNIT_REVIEWS[unit.id]?.handbook);
             return `<details class="unit-review-card" data-subject-theme="${subject.theme}" ${index === 0 ? "open" : ""}>
-              <summary><span class="unit-number">${reviewed ? "✓" : String(index + 1).padStart(2, "0")}</span><span><strong>${escapeHtml(unit.name || unit)}</strong><small>${reviewed ? "會考整理已閱讀" : hasHandbook ? "完整會考講義" : "約 5 分鐘整理"}・${unitQuestions.length} 題練習</small></span><span class="review-toggle" aria-hidden="true">＋</span></summary>
-              <div class="unit-review-content"><p class="review-label">考前先記住</p><ul>${(unit.review || ["理解核心概念", "讀題時找出關鍵條件", "作答後檢查錯誤原因"]).map((point) => `<li>${escapeHtml(point)}</li>`).join("")}</ul><div class="unit-card-actions"><button class="button button-primary button-small" type="button" data-open-unit-review="${escapeHtml(unit.id || String(index))}">${reviewed ? "再次複習整理" : "先看會考整理"}</button><button class="button button-secondary button-small" type="button" data-start-unit="${escapeHtml(unit.id || String(index))}">直接測驗</button></div></div>
+              <summary><span class="unit-number">${String(index + 1).padStart(2, "0")}</span><span><strong>${escapeHtml(unit.name || unit)}</strong><small>${unitQuestions.length} 題・以作答與立即解析進行加強</small></span><span class="review-toggle" aria-hidden="true">＋</span></summary>
+              <div class="unit-review-content"><p class="review-label">直接練習</p><p>答錯後可立即進入錯題整合，請 AI 科目老師協助你找出錯因並建立同觀念題。</p><div class="unit-card-actions"><button class="button button-primary button-small" type="button" data-start-unit="${escapeHtml(unit.id || String(index))}">開始 ${unitQuestions.length} 題練習</button></div></div>
             </details>`;
           }).join("")}
         </div>
@@ -534,6 +529,24 @@
     return questions.slice(0, Math.min(count, questions.length));
   }
 
+  // 108～114 年題組使用年度標記；題目採原創情境，對應該年度會考命題能力，不重製官方試卷文字。
+  function getHistoricalQuestions(subject, count) {
+    const yearTagged = getShuffledQuestions(subject.questions.filter((question) => Number(question.referenceYear) >= 108 && Number(question.referenceYear) <= 114), count);
+    if (yearTagged.length >= count) return yearTagged;
+    // 每次都先保留各年度命題趨勢題，再補入同樣採會考素養取向的原創題，維持 10 題完整練習。
+    const reinforcement = getShuffledQuestions(subject.questions.filter((question) => question.level === "cap" && !yearTagged.includes(question)), count - yearTagged.length);
+    return [...yearTagged, ...reinforcement];
+  }
+
+  function getShuffledQuestions(source, count) {
+    const questions = [...source];
+    for (let index = questions.length - 1; index > 0; index -= 1) {
+      const randomIndex = Math.floor(Math.random() * (index + 1));
+      [questions[index], questions[randomIndex]] = [questions[randomIndex], questions[index]];
+    }
+    return questions.slice(0, Math.min(count, questions.length));
+  }
+
   function normalizeAiQuestion(subjectId, question, sourceQuestionId, index) {
     if (!question || !Array.isArray(question.options) || question.options.length !== 4) return null;
     const answer = Number(question.answer);
@@ -610,7 +623,7 @@
     $("#practice-progress-bar").parentElement.setAttribute("aria-valuenow", String(progressPercent));
 
     $("#practice-card-host").innerHTML = `<article class="practice-card" data-subject-theme="${subject.theme}">
-      <div class="practice-card-head"><div class="question-badges"><span class="status-badge">${question.level === "cap" ? "會考素養題" : question.level === "ai-personalized" ? "AI 同觀念題" : "單選題"}</span><span class="status-badge difficulty-badge">難度 ${question.difficulty || 2}／5</span>${question.visual ? `<span class="status-badge visual-badge">圖表題</span>` : ""}</div><span class="practice-hint">選好答案後再確認</span></div>
+      <div class="practice-card-head"><div class="question-badges"><span class="status-badge">${question.referenceYear ? `民國 ${question.referenceYear} 年命題趨勢題` : question.level === "cap" ? "會考素養題" : question.level === "ai-personalized" ? "AI 同觀念題" : "單選題"}</span><span class="status-badge difficulty-badge">難度 ${question.difficulty || 2}／5</span>${question.visual ? `<span class="status-badge visual-badge">圖表題</span>` : ""}</div><span class="practice-hint">選好答案後再確認</span></div>
       ${question.ability ? `<p class="ability-label">能力：${escapeHtml(question.ability)}</p>` : ""}
       ${question.audioText ? `<section class="listening-player" aria-label="英文聽力播放器">
         <div class="listening-player-copy"><span class="listening-wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span><div><strong>先聽再作答</strong><small>可重播，建議先不要看逐字稿</small></div></div>
@@ -714,7 +727,7 @@
       ? "這個單元已掌握得很穩，之後可從錯題本做間隔複習。"
       : scoreRate >= 0.6
         ? "已經掌握大部分觀念，建議再看一次常見陷阱後重答錯題。"
-        : "先不用急著刷更多題，回到單元整理重新理解核心觀念會更有效。";
+        : "先別急著刷更多題，從錯題整合建立 AI 同觀念題，再把觀念練穩更有效。";
     if (practice.dailyMode && DAILY_SUBJECTS.includes(practice.subjectId)) markDailyComplete(practice.subjectId);
     $("#practice-progress-bar").style.width = "100%";
     $("#practice-progress-bar").parentElement.setAttribute("aria-valuenow", "100");
@@ -723,14 +736,13 @@
       <div class="completion-mark" aria-hidden="true">✓</div>
       <p class="section-label">MISSION COMPLETE</p>
       <h1>${subject.name}${practice.dailyMode ? "今日任務" : "練習"}完成！</h1>
-      <p>${practice.dailyMode ? "今天的進度已經記下來，穩定完成比一次做很多更重要。" : practice.sourceView === "unit-review" ? reviewFeedback : "你完成了一次快速練習，答錯的題目也已經收進錯題本。"}</p>
+      <p>${practice.dailyMode ? "今天的進度已經記下來，穩定完成比一次做很多更重要。" : practice.sourceView === "unit-review" ? reviewFeedback : "你完成了一次實戰練習；答錯題目已收進錯題整合，可再建立 AI 同觀念題。"}</p>
       <div class="completion-stats">
         <div class="completion-stat"><strong>${practice.questions.length}</strong><span>完成題數</span></div>
         <div class="completion-stat"><strong>${practice.correctCount}</strong><span>答對題數</span></div>
         <div class="completion-stat"><strong>${practice.wrongCount}</strong><span>加入錯題</span></div>
       </div>
       <div class="completion-actions">
-        ${practice.sourceView === "unit-review" ? `<button class="button button-secondary" type="button" data-completion-view="unit-review">回到整理再複習</button>` : ""}
         <button class="button button-secondary" type="button" data-completion-view="subjects">返回五科學習</button>
         <button class="button button-primary" type="button" data-completion-view="dashboard">完成今天，返回首頁</button>
       </div>
@@ -804,9 +816,6 @@
     const open = event.target.closest("[data-open-subject]");
     if (open) return openSubject(open.dataset.openSubject);
 
-    const openReview = event.target.closest("[data-open-unit-review]");
-    if (openReview) return openUnitReview(openReview.dataset.openUnitReview);
-
     const mixed = event.target.closest("[data-start-mixed]");
     if (mixed) {
       const subjectId = mixed.dataset.startMixed;
@@ -834,6 +843,12 @@
     if (bankPractice) {
       const subjectId = bankPractice.dataset.startBank;
       return startPractice(subjectId, getRandomQuestions(SUBJECTS[subjectId], 10, true), false, "subject");
+    }
+
+    const historicalPractice = event.target.closest("[data-start-historical]");
+    if (historicalPractice) {
+      const subjectId = historicalPractice.dataset.startHistorical;
+      return startPractice(subjectId, getHistoricalQuestions(SUBJECTS[subjectId], 10), false, "historical");
     }
 
     const aiPractice = event.target.closest("[data-start-ai-practice]");

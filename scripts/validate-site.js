@@ -4,6 +4,8 @@ const vm = require("vm");
 
 const html = fs.readFileSync("index.html", "utf8");
 const aiCoachSource = fs.readFileSync("ai-coach.js", "utf8");
+const learningSource = fs.readFileSync("learning.js", "utf8");
+const historicalExamSource = fs.readFileSync("historical-exam-bank.js", "utf8");
 const aiCoachPromptSource = aiCoachSource.slice(
   aiCoachSource.indexOf("const SUBJECT_PROMPTS ="),
   aiCoachSource.indexOf("const UNIT_COMPARISONS =")
@@ -12,6 +14,7 @@ const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
 const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
 const scriptSources = [...html.matchAll(/<script src="([^"]+)"/g)].map((match) => match[1]);
 const missingScripts = scriptSources.filter((source) => !fs.existsSync(source.split(/[?#]/)[0]));
+const historicalYears = [...new Set([...historicalExamSource.matchAll(/referenceYear:(10[89]|11[0-4])/g)].map((match) => Number(match[1])))].sort((a, b) => a - b);
 
 const css = fs.readFileSync("style.css", "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
 const desktopBottomNavigationHidden = /\.bottom-navigation\s*\{[^}]*display:\s*none\s*;[^}]*\}/s.test(css);
@@ -275,7 +278,7 @@ function testAICoach() {
   const chineseFields = ["■ 修辭", "■ 詞語", "■ 成語", "■ 文言文", "■ 閱讀理解", "■ 作者觀點", "■ 命題技巧", "【會考常考】", "【容易混淆】", "【閱讀技巧】"];
   if (!fixedHeadings.every((heading) => finalReport.includes(heading))) throw new Error("AI 教練固定九段診斷不完整");
   if (!chineseFields.every((heading) => finalReport.includes(heading))) throw new Error("AI 教練國文科專屬分析不完整");
-  if (!finalReport.includes("建立相似題練習") || !finalReport.includes("已在題庫錯題本")) throw new Error("AI 分析完成後缺少收藏與相似題操作");
+  if (!finalReport.includes("建立 AI 相似題") || !finalReport.includes("已在題庫錯題本")) throw new Error("AI 分析完成後缺少收藏與相似題操作");
   click("[data-coach-build-similar]");
   if (!elements["#coach-session-panel"].innerHTML.includes("已加入 3 題")) throw new Error("AI 相似題沒有加入五科加強題本");
   const promptChecks = {
@@ -343,6 +346,12 @@ const result = {
   aiTeacherCardCount: (html.match(/class="coach-teacher-card/g) || []).length,
   aiWrongFlowCount: (html.match(/class="ai-wrong-flow"/g) || []).length,
   aiPracticeCardCount: (fs.readFileSync("learning.js", "utf8").match(/class="subject-task-card subject-ai-card/g) || []).length,
+  historicalExamScriptCount: (html.match(/src="historical-exam-bank\.js(?:\?[^\"]*)?"/g) || []).length,
+  historicalExamQuestionCount: (historicalExamSource.match(/referenceYear:/g) || []).length,
+  historicalYears,
+  historicalPracticeActionCount: (learningSource.match(/data-start-historical/g) || []).length,
+  retiredUnitReviewActionCount: (learningSource.match(/data-open-unit-review/g) || []).length,
+  aiGeneratedSimilarRequestCount: (aiCoachSource.match(/requestAiSimilarPractice/g) || []).length,
   aiCoachScriptCount: (html.match(/src="ai-coach\.js(?:\?[^\"]*)?"/g) || []).length,
   aiNotePrintActionCount: (aiCoachSource.match(/data-coach-print-note/g) || []).length,
   aiCoachStepCount: (aiCoachSource.match(/function renderStage(One|Two|Three|Four|Five)\(/g) || []).length,
@@ -371,6 +380,10 @@ if (duplicateIds.length || missingScripts.length || result.planViewCount !== 1 |
   result.wrongIntegrationNavigationCount < 6 || result.retiredCoachNavigationCount !== 0 ||
   result.aiCoachSourceCount !== 3 || result.aiTeacherCardCount !== 2 ||
   result.aiWrongFlowCount !== 1 || result.aiPracticeCardCount !== 1 ||
+  result.historicalExamScriptCount !== 1 || result.historicalExamQuestionCount < 35 ||
+  result.historicalYears.join(",") !== "108,109,110,111,112,113,114" ||
+  result.historicalPracticeActionCount !== 2 || result.retiredUnitReviewActionCount !== 0 ||
+  result.aiGeneratedSimilarRequestCount < 2 ||
   result.aiCoachScriptCount !== 1 || result.aiNotePrintActionCount < 2 || result.aiCoachStepCount !== 5 ||
   result.aiCoachFixedHeadingCount !== 9 || result.aiCoachSubjectPromptCount < 5 ||
   cssBraceBalance !== 0 || !result.cssNeverNegative ||
