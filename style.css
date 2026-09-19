@@ -1126,6 +1126,7 @@ html[data-theme="colorful"] [data-subject-theme="social"] { --subject-color: #df
 .coach-hero-copy > p:not(.eyebrow) { max-width: 720px; margin: 18px 0 0; color: #607c89; line-height: 1.75; }
 .coach-principle-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
 .coach-principle-list span { padding: 7px 11px; border: 1px solid #d6e7ec; border-radius: 999px; color: #476f7d; background: rgba(255,255,255,0.84); font-size: 0.72rem; font-weight: 850; }
+.wrong-integration-view .coach-hero-copy > .button { margin-top: 17px; }
 .coach-stat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .coach-stat-grid article { min-width: 0; padding: 20px; border: 1px solid rgba(205,226,232,0.92); border-radius: 20px; background: rgba(255,255,255,0.88); box-shadow: 0 9px 24px rgba(56, 104, 128, 0.08); }
 .coach-stat-grid article:last-child { grid-column: 1 / -1; }

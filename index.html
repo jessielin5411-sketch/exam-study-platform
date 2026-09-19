@@ -136,8 +136,7 @@
           <button class="nav-item is-active" type="button" data-app-view="dashboard"><span class="nav-icon" aria-hidden="true">⌂</span>首頁</button>
           <button class="nav-item" type="button" data-app-view="plan"><span class="nav-icon" aria-hidden="true">日</span>複習計畫</button>
           <button class="nav-item" type="button" data-app-view="subjects"><span class="nav-icon" aria-hidden="true">▦</span>五科學習</button>
-          <button class="nav-item" type="button" data-app-view="coach"><span class="nav-icon" aria-hidden="true">問</span>AI 教練</button>
-          <button class="nav-item" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">↺</span>錯題本</button>
+          <button class="nav-item" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">解</span>錯題整合</button>
         </nav>
         <div class="topbar-tools">
           <button id="open-appearance-backup" class="appearance-backup-button" type="button" aria-haspopup="dialog">
@@ -270,7 +269,7 @@
         </div>
         <div class="action-buttons">
           <button id="open-data-tools" class="button button-secondary" type="button">外觀與資料備份</button>
-          <button class="button button-secondary" type="button" data-app-view="coach">國中會考 AI 教練</button>
+          <button class="button button-secondary" type="button" data-app-view="wrong">錯題整合中心</button>
           <button class="button button-secondary" type="button" data-app-view="plan">管理複習計畫</button>
           <button id="edit-profile-button" class="button button-secondary" type="button">修改個人資料</button>
           <button id="open-date-manager" class="button button-primary" type="button">管理重要日期</button>
@@ -289,8 +288,7 @@
           <button class="nav-item" type="button" data-app-view="dashboard"><span class="nav-icon" aria-hidden="true">⌂</span>首頁</button>
           <button class="nav-item is-active" type="button" data-app-view="plan"><span class="nav-icon" aria-hidden="true">日</span>複習計畫</button>
           <button class="nav-item" type="button" data-app-view="subjects"><span class="nav-icon" aria-hidden="true">▦</span>五科學習</button>
-          <button class="nav-item" type="button" data-app-view="coach"><span class="nav-icon" aria-hidden="true">問</span>AI 教練</button>
-          <button class="nav-item" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">↺</span>錯題本</button>
+          <button class="nav-item" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">解</span>錯題整合</button>
         </nav>
         <span class="comfort-badge">明亮陪讀模式</span>
       </header>
@@ -478,8 +476,7 @@
           <button class="nav-item" type="button" data-app-view="dashboard"><span class="nav-icon" aria-hidden="true">⌂</span>首頁</button>
           <button class="nav-item" type="button" data-app-view="plan"><span class="nav-icon" aria-hidden="true">日</span>複習計畫</button>
           <button class="nav-item is-active" type="button" data-app-view="subjects"><span class="nav-icon" aria-hidden="true">▦</span>五科學習</button>
-          <button class="nav-item" type="button" data-app-view="coach"><span class="nav-icon" aria-hidden="true">問</span>AI 教練</button>
-          <button class="nav-item" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">↺</span>錯題本</button>
+          <button class="nav-item" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">解</span>錯題整合</button>
         </nav>
         <span class="prototype-badge">UI Prototype</span>
       </header>
@@ -549,8 +546,8 @@
       <div id="practice-card-host"></div>
     </section>
 
-    <!-- 國中會考 AI 教練：科目老師先診斷與教解題，筆記老師再整理會考筆記。 -->
-    <section id="coach-view" class="product-view coach-view" aria-labelledby="coach-title" hidden>
+    <!-- 錯題整合中心：題庫錯題、數位錯題與紙本拍照，都由 AI 診斷並整理成可列印筆記。 -->
+    <section id="wrong-view" class="product-view coach-view wrong-integration-view" aria-labelledby="coach-title" hidden>
       <header class="product-topbar">
         <a class="brand app-home-link" href="#" data-app-view="dashboard" aria-label="回到 ExamMate 首頁">
           <span class="brand-mark brand-mark-small" aria-hidden="true">E</span><span><strong>ExamMate</strong><small>五科自主學習平台</small></span>
@@ -559,25 +556,25 @@
           <button class="nav-item" type="button" data-app-view="dashboard"><span class="nav-icon" aria-hidden="true">⌂</span>首頁</button>
           <button class="nav-item" type="button" data-app-view="plan"><span class="nav-icon" aria-hidden="true">日</span>複習計畫</button>
           <button class="nav-item" type="button" data-app-view="subjects"><span class="nav-icon" aria-hidden="true">▦</span>五科學習</button>
-          <button class="nav-item is-active" type="button" data-app-view="coach"><span class="nav-icon" aria-hidden="true">問</span>AI 教練</button>
-          <button class="nav-item" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">↺</span>錯題本</button>
+          <button class="nav-item is-active" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">解</span>錯題整合</button>
         </nav>
-        <span class="coach-safety-badge">先理解，再看答案</span>
+        <span class="coach-safety-badge">拍照分析・可列印筆記</span>
       </header>
 
       <section class="coach-hero">
         <div class="coach-hero-copy">
-          <p class="eyebrow">EXAMMATE AI COACH</p>
-          <h1 id="coach-title">一位教你解題，一位幫你把重點留下來。</h1>
-          <p>從題庫錯題、數位錯題本或拍照題目開始。AI 科目老師先找出考點與錯因，AI 筆記老師再整理成下次複習用得到的筆記。</p>
+          <p class="eyebrow">WRONG QUESTION HUB</p>
+          <h1 id="coach-title">把每一題錯題，整理成下一次答對的會考筆記。</h1>
+          <p>題庫錯題、已存錯題與紙本試題，都在同一個地方處理。拍下題目後，AI 科目老師先找出考點與錯因，AI 筆記老師再整理成可列印的會考重點。</p>
           <div class="coach-principle-list" aria-label="AI 教練原則">
-            <span>三種題目來源</span><span>先理解再看答案</span><span>兩位老師接力</span><span>固定九段診斷</span>
+            <span>紙本拍照上傳</span><span>先理解再看答案</span><span>兩位老師接力</span><span>列印會考筆記</span>
           </div>
+          <button class="button button-coach" type="button" data-open-coach-photo><span aria-hidden="true">▣</span>拍下紙本題，開始分析</button>
         </div>
         <div class="coach-stat-grid" aria-label="AI 教練學習紀錄">
-          <article><span>已陪練</span><strong id="coach-session-count">0</strong><small>題</small></article>
+          <article><span>已分析</span><strong id="coach-session-count">0</strong><small>題</small></article>
           <article><span>重答成功</span><strong id="coach-mastered-count">0</strong><small>題</small></article>
-          <article><span>優先加強</span><strong id="coach-focus-label">尚未分析</strong><small>依陪練紀錄</small></article>
+          <article><span>優先加強</span><strong id="coach-focus-label">尚未分析</strong><small>依錯題紀錄</small></article>
         </div>
       </section>
 
@@ -601,18 +598,18 @@
       <section class="coach-workspace" aria-label="AI 教練陪練區">
         <aside class="coach-question-library">
           <div class="coach-library-heading">
-            <div><p class="section-label">CHOOSE A QUESTION</p><h2>今天想弄懂哪一題？</h2></div>
+            <div><p class="section-label">WRONG QUESTION SOURCES</p><h2>今天想整理哪一題？</h2></div>
             <span id="coach-question-count">0 題</span>
           </div>
           <div class="coach-source-tabs" role="tablist" aria-label="題目來源">
             <button id="coach-wrong-source" class="is-active" type="button" data-coach-source="wrong" aria-pressed="true">題庫錯題</button>
-            <button id="coach-digital-source" type="button" data-coach-source="digital" aria-pressed="false">AI 數位錯題本</button>
-            <button id="coach-photo-source" type="button" data-coach-source="photo" aria-pressed="false">拍照建立錯題</button>
+            <button id="coach-digital-source" type="button" data-coach-source="digital" aria-pressed="false">已存錯題</button>
+            <button id="coach-photo-source" type="button" data-coach-source="photo" aria-pressed="false">紙本拍照分析</button>
           </div>
           <div id="coach-question-list" class="coach-question-list"></div>
           <div class="coach-custom-note">
             <span aria-hidden="true">盾</span>
-            <div><strong>照片辨識使用安全 AI 後端</strong><p id="coach-custom-status">題庫與數位錯題可直接使用；照片中的文字與圖形要由安全後端辨識，API Key 不會放進學生的瀏覽器。</p></div>
+            <div><strong>拍照內容會交給安全 AI 後端分析</strong><p id="coach-custom-status">題庫錯題與已存錯題可直接整理；紙本題目中的文字、圖表與選項會由 AI 辨識，API Key 不會放進學生的瀏覽器。</p></div>
           </div>
         </aside>
 
@@ -620,15 +617,16 @@
           <div class="coach-empty-state">
             <span class="coach-avatar" aria-hidden="true">解</span>
             <p class="section-label">YOUR LEARNING COACH</p>
-            <h2>先選一種題目來源，我們一步一步來。</h2>
-            <p>科目老師負責把題目教懂，筆記老師負責把這次學會的方法留下來。</p>
-            <ol><li>選擇題庫錯題、數位錯題或拍照</li><li>找出考點與真正錯因</li><li>學習解題方法並重新判斷</li><li>整理會考筆記</li></ol>
+            <h2>先選一題錯題，我們一步一步把它變成筆記。</h2>
+            <p>科目老師負責把題目教懂，筆記老師負責整理成可列印的會考重點。</p>
+            <ol><li>選擇題庫錯題、已存錯題或紙本拍照</li><li>找出考點與真正錯因</li><li>學習解題方法並重新判斷</li><li>列印會考重點筆記</li></ol>
           </div>
         </section>
       </section>
     </section>
 
-    <section id="wrong-view" class="product-view" aria-labelledby="wrong-title" hidden>
+    <!-- 舊版完整錯題清單保留作為資料相容層，學生入口統一改由上方錯題整合中心提供。 -->
+    <section id="wrong-library-view" class="product-view" aria-labelledby="wrong-title" hidden>
       <header class="product-topbar">
         <a class="brand app-home-link" href="#" data-app-view="dashboard" aria-label="回到 ExamMate 首頁">
           <span class="brand-mark brand-mark-small" aria-hidden="true">E</span><span><strong>ExamMate</strong><small>五科自主學習平台</small></span>
@@ -637,8 +635,7 @@
           <button class="nav-item" type="button" data-app-view="dashboard"><span class="nav-icon" aria-hidden="true">⌂</span>首頁</button>
           <button class="nav-item" type="button" data-app-view="plan"><span class="nav-icon" aria-hidden="true">日</span>複習計畫</button>
           <button class="nav-item" type="button" data-app-view="subjects"><span class="nav-icon" aria-hidden="true">▦</span>五科學習</button>
-          <button class="nav-item" type="button" data-app-view="coach"><span class="nav-icon" aria-hidden="true">問</span>AI 教練</button>
-          <button class="nav-item is-active" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">↺</span>錯題本</button>
+          <button class="nav-item is-active" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">解</span>錯題整合</button>
         </nav>
         <span id="wrong-count-badge" class="prototype-badge">0 題</span>
       </header>
@@ -829,8 +826,7 @@
     <button class="bottom-nav-item is-active" type="button" data-app-view="dashboard"><span aria-hidden="true">⌂</span><small>首頁</small></button>
     <button class="bottom-nav-item" type="button" data-app-view="plan"><span aria-hidden="true">日</span><small>計畫</small></button>
     <button class="bottom-nav-item" type="button" data-app-view="subjects"><span aria-hidden="true">▦</span><small>五科</small></button>
-    <button class="bottom-nav-item" type="button" data-app-view="coach"><span aria-hidden="true">問</span><small>AI教練</small></button>
-    <button class="bottom-nav-item" type="button" data-app-view="wrong"><span aria-hidden="true">↺</span><small>錯題本</small></button>
+    <button class="bottom-nav-item" type="button" data-app-view="wrong"><span aria-hidden="true">解</span><small>錯題整合</small></button>
   </nav>
 
   <dialog id="answer-dialog" class="answer-dialog">

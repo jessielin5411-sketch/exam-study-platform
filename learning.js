@@ -311,45 +311,44 @@
 
   function goToView(viewName) {
     if (!hasProfile()) return;
-    ["dashboard-view", "plan-view", "subjects-view", "subject-view", "unit-review-view", "practice-view", "coach-view", "wrong-view"].forEach((id) => {
+    // 「AI 教練」已併入錯題整合中心；保留 coach 別名，讓既有錯題按鈕仍可正常帶學生進入同一頁。
+    const targetView = viewName === "coach" ? "wrong" : viewName;
+    ["dashboard-view", "plan-view", "subjects-view", "subject-view", "unit-review-view", "practice-view", "wrong-view", "wrong-library-view"].forEach((id) => {
       const view = $("#" + id);
       if (view) view.hidden = true;
     });
     $("#setup-view").hidden = true;
 
-    if (viewName === "dashboard") {
+    if (targetView === "dashboard") {
       $("#dashboard-view").hidden = false;
       window.ExamMateWeeklyPlanReminder?.check();
     }
-    if (viewName === "plan") {
+    if (targetView === "plan") {
       $("#plan-view").hidden = false;
       window.ExamMateStudyPlan?.render();
     }
-    if (viewName === "subjects") {
+    if (targetView === "subjects") {
       $("#subjects-view").hidden = false;
       renderLearningOverview();
     }
-    if (viewName === "subject") {
+    if (targetView === "subject") {
       $("#subject-view").hidden = false;
       renderSubjectPage(state.currentSubjectId);
     }
-    if (viewName === "unit-review") {
+    if (targetView === "unit-review") {
       $("#unit-review-view").hidden = false;
       renderUnitReviewPage(state.currentSubjectId, state.currentUnitId);
     }
-    if (viewName === "practice") $("#practice-view").hidden = false;
-    if (viewName === "coach") {
-      $("#coach-view").hidden = false;
-      window.ExamMateAICoach?.render();
-    }
-    if (viewName === "wrong") {
+    if (targetView === "practice") $("#practice-view").hidden = false;
+    if (targetView === "wrong") {
       $("#wrong-view").hidden = false;
       renderWrongQuestions();
       window.ExamMateDigitalNotebook?.render();
+      window.ExamMateAICoach?.render();
     }
 
-    state.currentView = viewName;
-    setActiveNavigation(viewName === "subject" || viewName === "unit-review" || viewName === "practice" ? "subjects" : viewName);
+    state.currentView = targetView;
+    setActiveNavigation(targetView === "subject" || targetView === "unit-review" || targetView === "practice" ? "subjects" : targetView);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 

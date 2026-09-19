@@ -335,13 +335,16 @@ const result = {
   digitalNotebookScriptCount: (html.match(/src="digital-wrong-notebook\.js(?:\?[^\"]*)?"/g) || []).length,
   weeklyReminderScriptCount: (html.match(/src="weekly-plan-reminder\.js"/g) || []).length,
   appearanceBackupScriptCount: (html.match(/src="appearance-backup\.js(?:\?[^\"]*)?"/g) || []).length,
-  aiCoachViewCount: (html.match(/id="coach-view"/g) || []).length,
-  aiCoachNavigationCount: (html.match(/data-app-view="coach"/g) || []).length,
+  wrongIntegrationViewCount: (html.match(/id="wrong-view"/g) || []).length,
+  legacyWrongLibraryViewCount: (html.match(/id="wrong-library-view"/g) || []).length,
+  wrongIntegrationNavigationCount: (html.match(/data-app-view="wrong"/g) || []).length,
+  retiredCoachNavigationCount: (html.match(/data-app-view="coach"/g) || []).length,
   aiCoachSourceCount: (html.match(/data-coach-source="(wrong|digital|photo)"/g) || []).length,
   aiTeacherCardCount: (html.match(/class="coach-teacher-card/g) || []).length,
   aiWrongFlowCount: (html.match(/class="ai-wrong-flow"/g) || []).length,
   aiPracticeCardCount: (fs.readFileSync("learning.js", "utf8").match(/class="subject-task-card subject-ai-card/g) || []).length,
   aiCoachScriptCount: (html.match(/src="ai-coach\.js(?:\?[^\"]*)?"/g) || []).length,
+  aiNotePrintActionCount: (aiCoachSource.match(/data-coach-print-note/g) || []).length,
   aiCoachStepCount: (aiCoachSource.match(/function renderStage(One|Two|Three|Four|Five)\(/g) || []).length,
   aiCoachFixedHeadingCount: (aiCoachSource.match(/[①②③④⑤⑥⑦⑧⑨] /g) || []).length,
   aiCoachSubjectPromptCount: (aiCoachPromptSource.match(/^    (chinese|english|math|social|science): \{$/gm) || []).length,
@@ -364,10 +367,11 @@ if (duplicateIds.length || missingScripts.length || result.planViewCount !== 1 |
   result.wrongCenterPanelCount !== 2 || result.digitalNotebookScriptCount !== 1 ||
   result.weeklyReminderScriptCount !== 1 || result.planWeekSwitchCount !== 2 ||
   result.appearanceBackupScriptCount !== 1 || result.themeChoiceCount !== 2 ||
-  result.aiCoachViewCount !== 1 || result.aiCoachNavigationCount < 6 ||
+  result.wrongIntegrationViewCount !== 1 || result.legacyWrongLibraryViewCount !== 1 ||
+  result.wrongIntegrationNavigationCount < 6 || result.retiredCoachNavigationCount !== 0 ||
   result.aiCoachSourceCount !== 3 || result.aiTeacherCardCount !== 2 ||
   result.aiWrongFlowCount !== 1 || result.aiPracticeCardCount !== 1 ||
-  result.aiCoachScriptCount !== 1 || result.aiCoachStepCount !== 5 ||
+  result.aiCoachScriptCount !== 1 || result.aiNotePrintActionCount < 2 || result.aiCoachStepCount !== 5 ||
   result.aiCoachFixedHeadingCount !== 9 || result.aiCoachSubjectPromptCount < 5 ||
   cssBraceBalance !== 0 || !result.cssNeverNegative ||
   !result.desktopBottomNavigationHidden || !result.mobileBottomNavigationVisible) {

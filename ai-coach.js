@@ -640,9 +640,43 @@
       ${buildFixedReport(subject, question)}
       ${renderLearningActions(subject, question)}
       <div class="coach-stage-actions coach-finish-actions">
+        <button class="button button-secondary" type="button" data-coach-print-note><span aria-hidden="true">▣</span>列印這份會考重點筆記</button>
         ${correct && state.session.source === "wrong" ? `<button class="button button-secondary" type="button" data-coach-mastered>標記這題已掌握</button>` : `<button class="button button-secondary" type="button" data-app-view="wrong">回錯題本複習</button>`}
         <button class="button button-primary" type="button" data-coach-another>再陪我看一題</button>
       </div>`;
+  }
+
+  // 列印時只帶出這一題的完整解析與 AI 筆記，不把整個操作頁面一起印出。
+  function printCurrentNote() {
+    const session = state.session;
+    const question = getSessionQuestion(session);
+    const subject = SUBJECTS[session?.subjectId];
+    const panel = $("#coach-session-panel");
+    if (!session || session.stage !== 5 || !question || !subject || !panel) return;
+
+    const report = Array.from(panel.querySelectorAll(".coach-result-banner, .coach-final-explanation, .coach-fixed-report, .coach-note-teacher-report"))
+      .map((node) => node.outerHTML)
+      .join("");
+    const now = new Date();
+    const printedDate = `民國${now.getFullYear() - 1911}年${now.getMonth() + 1}月${now.getDate()}日`;
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return notify("瀏覽器暫時阻擋列印視窗，請允許彈出視窗後再試一次。", true);
+
+    printWindow.opener = null;
+    printWindow.document.open();
+    printWindow.document.write(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>${escapeHtml(subject.name)}會考重點筆記</title><style>
+      @page { size: A4; margin: 13mm; }
+      * { box-sizing: border-box; } body { color: #1c3446; font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; line-height: 1.7; }
+      .print-head { border-bottom: 3px solid #4f99a7; margin-bottom: 18px; padding-bottom: 12px; } .print-head p { margin: 0; color: #58808a; font-size: 12px; letter-spacing: .08em; } .print-head h1 { margin: 4px 0; font-size: 25px; } .print-head small { color: #6a7e84; }
+      .coach-result-banner, .coach-final-explanation, .coach-fixed-report, .coach-note-teacher-report { break-inside: avoid; margin: 0 0 16px; padding: 15px; border: 1px solid #cfe4e7; border-radius: 12px; background: #fbfefe; }
+      .coach-result-banner h2, .coach-fixed-report h2, .coach-note-teacher-report h2 { margin: 0 0 6px; color: #24586a; } .coach-result-banner p, .coach-fixed-report p, .coach-note-teacher-report p { margin: 5px 0; }
+      .section-label { color: #4d8997; font-size: 11px; font-weight: 800; letter-spacing: .08em; } .coach-answer-key { padding: 10px 12px; border-radius: 8px; background: #e9f8f5; } .coach-answer-key span { display: block; color: #4a747d; font-size: 12px; } .coach-answer-key strong { display: block; margin-top: 3px; color: #183d50; }
+      .coach-report-section-list, .coach-subject-field-grid, .coach-note-toolkit, .coach-subject-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; } .coach-report-section-list article, .coach-subject-field-grid article, .coach-note-toolkit article, .coach-subject-summary article { padding: 10px; border: 1px solid #dcebed; border-radius: 9px; background: white; } h3 { margin: 0; color: #315f6e; font-size: 14px; } h3 + p { font-size: 13px; }
+      .coach-teacher-handoff, .coach-learning-actions, .coach-stage-actions, button { display: none !important; } @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+    </style></head><body><header class="print-head"><p>EXAMMATE・錯題整合中心</p><h1>${escapeHtml(subject.name)}｜${escapeHtml(question.unit)} 會考重點筆記</h1><small>由 AI 科目老師診斷、AI 筆記老師整理・列印日期：${printedDate}</small></header>${report}</body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    window.setTimeout(() => printWindow.print(), 250);
   }
 
   // 分析完成後才詢問學生是否收藏，避免每張照片都自動堆進錯題本。
@@ -889,7 +923,7 @@
 
   function open(subjectId, questionId, selectedIndex) {
     state.source = "wrong";
-    window.ExamMateLearning?.goToView("coach");
+    window.ExamMateLearning?.goToView("wrong");
     startSession(subjectId, questionId, selectedIndex);
   }
 
@@ -897,14 +931,14 @@
     const item = findDigitalQuestion(digitalId);
     if (!item) return notify("找不到這筆數位錯題，請重新整理錯題本。", true);
     state.source = "digital";
-    window.ExamMateLearning?.goToView("coach");
+    window.ExamMateLearning?.goToView("wrong");
     startDigitalSession(digitalId);
   }
 
   function openPhoto() {
     state.source = "photo";
     state.session = null;
-    window.ExamMateLearning?.goToView("coach");
+    window.ExamMateLearning?.goToView("wrong");
     renderQuestionList();
     $("#coach-question-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -1067,6 +1101,7 @@
     if (event.target.closest("[data-coach-submit-retry]")) return completeSession();
     if (event.target.closest("[data-coach-save-wrong]")) return saveCurrentToNotebook();
     if (event.target.closest("[data-coach-build-similar]")) return buildSimilarPractice();
+    if (event.target.closest("[data-coach-print-note]")) return printCurrentNote();
     if (event.target.closest("[data-coach-mastered]")) return markMastered();
     if (event.target.closest("[data-coach-another]")) return chooseAnother();
     if (event.target.closest("#reset-coach-data")) {
