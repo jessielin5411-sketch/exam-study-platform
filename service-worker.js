@@ -1,5 +1,5 @@
 /* ExamMate 離線殼層：個人資料與 AI 回覆不會寫入快取。 */
-const CACHE_NAME = "exammate-shell-v20260920";
+const CACHE_NAME = "exammate-shell-v20260920-photo-ai";
 const CORE_ASSETS = [
   "./", "index.html", "style.css", "config.js", "script.js", "question-bank.js",
   "exam-question-bank.js", "historical-exam-bank.js", "chinese-expansion-bank.js",

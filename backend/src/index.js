@@ -35,76 +35,10 @@ const FIXED_HEADINGS = [
   "⑨ AI再提醒一次"
 ];
 
-const RESPONSE_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    question: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        id: { type: "string" },
-        unit: { type: "string" },
-        ability: { type: "string" },
-        difficulty: { type: "integer", minimum: 1, maximum: 5 },
-        prompt: { type: "string" },
-        context: { type: "string" },
-        options: { type: "array", minItems: 4, maxItems: 4, items: { type: "string" } },
-        answer: { type: "integer", minimum: 0, maximum: 3 },
-        correctAnswerText: { type: "string" },
-        explanation: { type: "string" },
-        commonError: { type: "string" }
-      },
-      required: ["id", "unit", "ability", "difficulty", "prompt", "context", "options", "answer", "correctAnswerText", "explanation", "commonError"]
-    },
-    analysis: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        fixedSections: { type: "array", minItems: 9, maxItems: 9, items: { $ref: "#/$defs/noteItem" } },
-        subjectFields: { type: "array", minItems: 5, maxItems: 8, items: { $ref: "#/$defs/noteItem" } },
-        noteToolkit: { type: "array", minItems: 6, maxItems: 6, items: { $ref: "#/$defs/noteItem" } },
-        summaries: { type: "array", minItems: 3, maxItems: 3, items: { $ref: "#/$defs/noteItem" } }
-      },
-      required: ["fixedSections", "subjectFields", "noteToolkit", "summaries"]
-    },
-    similarQuestions: {
-      type: "array",
-      minItems: 3,
-      maxItems: 3,
-      items: { $ref: "#/$defs/practiceQuestion" }
-    }
-  },
-  required: ["question", "analysis", "similarQuestions"],
-  $defs: {
-    noteItem: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        label: { type: "string" },
-        content: { type: "string" }
-      },
-      required: ["label", "content"]
-    },
-    practiceQuestion: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        id: { type: "string" },
-        unit: { type: "string" },
-        ability: { type: "string" },
-        difficulty: { type: "integer", minimum: 1, maximum: 5 },
-        prompt: { type: "string" },
-        context: { type: "string" },
-        options: { type: "array", minItems: 4, maxItems: 4, items: { type: "string" } },
-        answer: { type: "integer", minimum: 0, maximum: 3 },
-        explanation: { type: "string" },
-        commonError: { type: "string" }
-      },
-      required: ["id", "unit", "ability", "difficulty", "prompt", "context", "options", "answer", "explanation", "commonError"]
-    }
-  }
-};
+// Gemini 雖支援 Structured Output，但很深、很大的 Schema 會在部分請求被 API 拒絕。
+// 拍照題先以 JSON 回傳，再由下方程式做嚴謹的防呆與正規化，可靠度較高。
+const MAX_IMAGE_DATA_LENGTH = 5_100_000;
+const RETRYABLE_GEMINI_STATUS = new Set([500, 502, 503, 504]);
 
 function allowedOrigins(env) {
   return String(env.ALLOWED_ORIGINS || "")
@@ -157,7 +91,7 @@ function validateImageData(value) {
   if (typeof value !== "string" || !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(value)) {
     throw new Error("圖片格式不支援，請使用 JPG、PNG 或 WebP。 ");
   }
-  if (value.length > 5_500_000) throw new Error("圖片過大，請裁切後再上傳。 ");
+  if (value.length > MAX_IMAGE_DATA_LENGTH) throw new Error("圖片過大，請裁切成單一題目後再上傳。 ");
   return value;
 }
 
@@ -167,26 +101,59 @@ function validatePayload(body) {
   const unit = String(body.unit || "").trim().slice(0, 80);
   const questionText = String(body.questionText || "").trim().slice(0, 3000);
   const studentThinking = String(body.studentThinking || "").trim().slice(0, 1000);
+  const requestMode = body.requestMode === "similar-practice" ? "similar-practice" : "analysis";
+  const imageMode = body.imageMode === "chart" ? "chart" : "text";
   const imageData = validateImageData(body.imageData);
   if (!unit) throw new Error("請填寫單元或範圍。 ");
   if (!imageData && !questionText) throw new Error("請提供題目照片或題幹文字。 ");
-  return { subjectId: body.subjectId, unit, questionText, studentThinking, imageData };
+  return { subjectId: body.subjectId, unit, questionText, studentThinking, requestMode, imageMode, imageData };
 }
 
 function recordToMap(items) {
+  if (items && !Array.isArray(items) && typeof items === "object") {
+    return Object.fromEntries(Object.entries(items).map(([label, content]) => [String(label), String(content || "")]));
+  }
   return Object.fromEntries((Array.isArray(items) ? items : []).map((item) => [String(item.label || ""), String(item.content || "")]));
 }
 
-function normalizeResult(result) {
+function normalizeQuestion(question = {}) {
+  const options = Array.isArray(question.options) ? question.options.map(String).filter(Boolean).slice(0, 4) : [];
+  const answer = Number.isInteger(question.answer) && question.answer >= 0 && question.answer <= 3 ? question.answer : null;
   return {
-    question: result.question,
-    analysis: {
-      fixedSections: recordToMap(result.analysis?.fixedSections),
-      subjectFields: recordToMap(result.analysis?.subjectFields),
-      noteToolkit: recordToMap(result.analysis?.noteToolkit),
-      summaries: recordToMap(result.analysis?.summaries)
+    id: String(question.id || "ai-photo-question"),
+    unit: String(question.unit || ""),
+    ability: String(question.ability || ""),
+    difficulty: Math.max(1, Math.min(5, Number(question.difficulty) || 3)),
+    prompt: String(question.prompt || ""),
+    context: String(question.context || ""),
+    options,
+    answer,
+    correctAnswerText: String(question.correctAnswerText || question.correctAnswer || ""),
+    explanation: String(question.explanation || ""),
+    commonError: String(question.commonError || "")
+  };
+}
+
+function normalizeResult(result, input) {
+  const source = result && typeof result === "object" ? result : {};
+  const question = normalizeQuestion(source.question || source);
+  return {
+    question: {
+      ...question,
+      unit: question.unit || input.unit,
+      ability: question.ability || `${input.unit}的命題考點與解題能力`,
+      prompt: question.prompt || input.questionText || "照片中的題目",
+      context: question.context || "學生拍照詢問",
+      explanation: question.explanation || "請依題目條件與 AI 的解題步驟重新核對。",
+      commonError: question.commonError || input.studentThinking || "需要先確認題目限制與使用的核心觀念。"
     },
-    similarQuestions: result.similarQuestions
+    analysis: {
+      fixedSections: recordToMap(source.analysis?.fixedSections),
+      subjectFields: recordToMap(source.analysis?.subjectFields),
+      noteToolkit: recordToMap(source.analysis?.noteToolkit),
+      summaries: recordToMap(source.analysis?.summaries)
+    },
+    similarQuestions: Array.isArray(source.similarQuestions) ? source.similarQuestions.map(normalizeQuestion).filter((item) => item.prompt) : []
   };
 }
 
@@ -195,6 +162,25 @@ function extractOutputText(response) {
     .map((part) => typeof part.text === "string" ? part.text : "")
     .join("")
     .trim();
+}
+
+function parseJsonOutput(outputText) {
+  const cleanText = String(outputText || "")
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
+  try {
+    return JSON.parse(cleanText);
+  } catch {
+    const first = cleanText.indexOf("{");
+    const last = cleanText.lastIndexOf("}");
+    if (first < 0 || last <= first) throw new Error("not json");
+    return JSON.parse(cleanText.slice(first, last + 1));
+  }
+}
+
+function sleep(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function toGeminiImagePart(imageData) {
@@ -208,13 +194,28 @@ function toGeminiImagePart(imageData) {
   };
 }
 
-function buildSystemPrompt(subjectId) {
+function buildSystemPrompt(subjectId, input) {
+  const chartInstruction = input.imageMode === "chart"
+    ? "這是一題含圖表、座標圖、地圖或表格的題目。先辨識題目問什麼，再清楚讀出標題、圖例、座標軸、單位、資料趨勢與關鍵數值；任何看不清的文字都標示為「圖片文字不清」，不可自行補造。"
+    : "若照片中包含示意圖或表格，請把圖中可辨識的條件與題幹一起判讀；看不清的內容不可猜造。";
+  const similarInstruction = input.requestMode === "similar-practice"
+    ? "這次只要依學生已完成的錯題考點，設計原創同觀念加強題；不需要重述九段解析。"
+    : "分析內容依固定九段標題排列：" + FIXED_HEADINGS.join("、") + "。";
   return `你是具有二十年以上經驗的國中教育會考${SUBJECT_NAMES[subjectId]}科命題老師、學習診斷專家與自主學習教練。
 請辨識學生提供的紙本題目，使用繁體中文回答。先分析題目考點與學生可能的錯誤原因，再教解題方法、命題陷阱與下次避免方式。
-語言必須讓國中生理解，簡潔、有根據、不製造焦慮。分析內容依固定九段標題排列：${FIXED_HEADINGS.join("、")}。
+語言必須讓國中生理解，簡潔、有根據、不製造焦慮。${similarInstruction}
 ${SUBJECT_GUIDES[subjectId]}
-請另外設計三題同一核心觀念、但情境與數字不同的原創四選一題；不得只替換人名或照抄原題。答案索引使用 0、1、2、3。
-若照片文字不清楚，不可猜造看不見的內容；應根據題幹文字與可辨識部分完成最保守的分析。不要辨識或輸出姓名、准考證等個人資訊。`;
+${chartInstruction}
+不要辨識或輸出姓名、准考證等個人資訊。`;
+}
+
+function buildResponseInstruction(input) {
+  if (input.requestMode === "similar-practice") {
+    return `只回傳 JSON，不要 Markdown。格式：{"similarQuestions":[...] }。請依已知核心觀念設計 3 題原創四選一題；每題要有 id、unit、ability、difficulty（1-5）、prompt、context、options（4 個）、answer（0-3）、explanation、commonError。情境或數字必須與原題不同。`;
+  }
+  return `只回傳 JSON，不要 Markdown。格式：
+{"question":{"id":"","unit":"","ability":"","difficulty":3,"prompt":"","context":"","options":[],"answer":0,"correctAnswerText":"","explanation":"","commonError":""},"analysis":{"fixedSections":[{"label":"① 本題考什麼？","content":""}],"subjectFields":[{"label":"科目分析欄位","content":""}],"noteToolkit":[{"label":"整理知識","content":""}],"summaries":[{"label":"會考常考","content":""}]}}
+question 的 options 與 answer 僅在題目和選項都清楚時才填；看不清時 options 請留空、answer 請用 null，並在解析說明需要補拍的位置。fixedSections 必須有全部 9 段；subjectFields 依該科需求填 5-8 項；noteToolkit 填「整理知識、會考重點、比較表、一句口訣、時間軸、常考整理」；summaries 填 3 項該科重點。每段 2-4 句，內容精準即可。`;
 }
 
 async function analyzeQuestion(request, env) {
@@ -236,15 +237,14 @@ async function analyzeQuestion(request, env) {
   }
 
   const userParts = [{
-    text: `科目：${SUBJECT_NAMES[input.subjectId]}\n單元：${input.unit}\n題幹文字：${input.questionText || "請由照片辨識"}\n學生卡住的地方：${input.studentThinking || "尚未說明"}`
+    text: `科目：${SUBJECT_NAMES[input.subjectId]}\n單元：${input.unit}\n題目類型：${input.imageMode === "chart" ? "含圖表／座標圖／地圖／表格" : "一般文字或圖片題"}\n題幹文字：${input.questionText || "請由照片辨識"}\n學生卡住的地方：${input.studentThinking || "尚未說明"}\n\n${buildResponseInstruction(input)}`
   }];
   const imagePart = toGeminiImagePart(input.imageData);
   if (imagePart) userParts.push(imagePart);
 
   const model = String(env.GEMINI_MODEL || "gemini-3.5-flash").trim();
-  let geminiResponse;
-  try {
-    geminiResponse = await fetch(`${GEMINI_API_BASE_URL}/${encodeURIComponent(model)}:generateContent`, {
+  const requestId = crypto.randomUUID();
+  const requestGemini = () => fetch(`${GEMINI_API_BASE_URL}/${encodeURIComponent(model)}:generateContent`, {
       method: "POST",
       headers: {
         "x-goog-api-key": env.GEMINI_API_KEY,
@@ -252,20 +252,29 @@ async function analyzeQuestion(request, env) {
       },
       body: JSON.stringify({
         systemInstruction: {
-          parts: [{ text: buildSystemPrompt(input.subjectId) }]
+          parts: [{ text: buildSystemPrompt(input.subjectId, input) }]
         },
         contents: [{ role: "user", parts: userParts }],
         generationConfig: {
           responseMimeType: "application/json",
-          responseJsonSchema: RESPONSE_SCHEMA,
-          // 圖片題需要額外的辨識與推理空間，避免固定 JSON 在結尾被截斷。
-          maxOutputTokens: 12000,
+          // 拍照分析不一次預先出相似題，讓照片辨識有足夠回覆空間且降低失敗率。
+          maxOutputTokens: input.requestMode === "similar-practice" ? 3600 : 7200,
           temperature: 0.25
         }
       })
     });
+
+  let geminiResponse;
+  try {
+    geminiResponse = await requestGemini();
+    // 短暫的服務端錯誤自動重試一次；學生不需要手動重新上傳照片。
+    if (RETRYABLE_GEMINI_STATUS.has(geminiResponse.status)) {
+      await sleep(700);
+      geminiResponse = await requestGemini();
+    }
   } catch (error) {
-    return jsonResponse(request, env, { error: "目前無法連線 AI 服務，請稍後再試。" }, 502);
+    console.error(JSON.stringify({ requestId, event: "gemini_network_error", message: error.message }));
+    return jsonResponse(request, env, { error: "目前無法連線 AI 服務，請稍後再試。", requestId }, 502);
   }
 
   const responseBody = await geminiResponse.json().catch(() => ({}));
@@ -280,18 +289,27 @@ async function analyzeQuestion(request, env) {
         ? "Gemini API Key 無效，請由管理者重新設定。"
         : geminiResponse.status === 404
           ? "目前設定的 Gemini 模型無法使用，請由管理者檢查模型名稱。"
-        : "AI 分析暫時無法完成，請稍後再試。";
-    console.error("Gemini error", geminiResponse.status, providerStatus || responseBody?.error?.code || "unknown");
-    return jsonResponse(request, env, { error: message }, geminiResponse.status === 429 ? 429 : 502);
+          : geminiResponse.status === 400
+            ? "AI 目前無法讀取這張圖片的資料格式。請改拍單一題目、確認文字與圖表清楚後再試。"
+            : "AI 服務目前較忙，已自動重試一次仍未完成。請稍後再試。";
+    console.error(JSON.stringify({
+      requestId,
+      event: "gemini_provider_error",
+      status: geminiResponse.status,
+      providerStatus: providerStatus || responseBody?.error?.code || "unknown",
+      providerMessage: providerMessage.slice(0, 500),
+      model
+    }));
+    return jsonResponse(request, env, { error: message, requestId }, geminiResponse.status === 429 ? 429 : 502);
   }
 
   try {
     const outputText = extractOutputText(responseBody);
     if (!outputText) throw new Error("empty output");
-    return jsonResponse(request, env, normalizeResult(JSON.parse(outputText)));
+    return jsonResponse(request, env, normalizeResult(parseJsonOutput(outputText), input));
   } catch (error) {
-    console.error("Invalid structured output", error.message);
-    return jsonResponse(request, env, { error: "AI 已回覆，但資料格式不完整，請再試一次。" }, 502);
+    console.error(JSON.stringify({ requestId, event: "gemini_invalid_json", message: error.message, model }));
+    return jsonResponse(request, env, { error: "AI 已讀到題目，但回覆格式不完整。請再試一次；若是圖表題，建議只拍一題並把圖表拍滿畫面。", requestId }, 502);
   }
 }
 

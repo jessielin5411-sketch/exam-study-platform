@@ -116,7 +116,7 @@
     photoBusy: false,
     photoStatus: "",
     photoStatusError: false,
-    photoDraft: { subjectId: "chinese", unit: "", questionText: "", studentThinking: "" },
+    photoDraft: { subjectId: "chinese", imageMode: "text", unit: "", questionText: "", studentThinking: "" },
     toastTimer: null
   };
 
@@ -291,19 +291,20 @@
     const subjectOptions = [["chinese", "國文"], ["english", "英文"], ["math", "數學"], ["science", "自然"], ["social", "社會"]]
       .map(([id, name]) => `<option value="${id}" ${draft.subjectId === id ? "selected" : ""}>${name}</option>`).join("");
     return `<form id="coach-photo-form" class="coach-photo-form" novalidate>
-      <div class="coach-photo-heading"><span class="coach-teacher-avatar" aria-hidden="true">拍</span><div><h3>拍下不會的題目</h3><p>照片要清楚包含題幹、圖表與選項；先選科目並寫下自己卡住的地方，分析會更準確。</p></div></div>
+      <div class="coach-photo-heading"><span class="coach-teacher-avatar" aria-hidden="true">拍</span><div><h3>拍下不會的題目</h3><p>一張照片只放一題，清楚包含題幹、圖表與選項；先選科目並寫下自己卡住的地方，分析會更準確。</p></div></div>
       <label class="coach-photo-zone" for="coach-photo-file">
-        ${state.photoImage ? `<img src="${state.photoImage}" alt="準備詢問的題目照片">` : `<span aria-hidden="true">▣</span><strong>拍照或選擇題目圖片</strong><small>支援手機相機與電腦圖片</small>`}
+        ${state.photoImage ? `<img src="${state.photoImage}" alt="準備詢問的題目照片">` : `<span aria-hidden="true">▣</span><strong>拍照或選擇題目圖片</strong><small>支援手機相機與電腦圖片；圖表題建議橫向拍滿畫面</small>`}
       </label>
       <input id="coach-photo-file" class="sr-only" type="file" accept="image/*" capture="environment">
       ${state.photoImage ? `<button class="text-button" type="button" data-coach-remove-photo>移除照片</button>` : ""}
       <div class="coach-photo-fields">
         <label><span>科目</span><select name="subjectId" required>${subjectOptions}</select></label>
-        <label><span>單元或範圍</span><input name="unit" maxlength="40" value="${escapeHtml(draft.unit)}" placeholder="例如：一元二次方程式" required></label>
-        <label class="is-wide"><span>題幹文字 <small>建議填寫</small></span><textarea name="questionText" rows="3" maxlength="1200" placeholder="可貼上或輸入題目文字；有圖片辨識後端時可只拍照。">${escapeHtml(draft.questionText)}</textarea></label>
+        <label><span>圖片類型</span><select name="imageMode"><option value="text" ${draft.imageMode !== "chart" ? "selected" : ""}>一般文字題</option><option value="chart" ${draft.imageMode === "chart" ? "selected" : ""}>含圖表／座標圖／地圖</option></select></label>
+        <label class="is-wide"><span>單元或範圍</span><input name="unit" maxlength="40" value="${escapeHtml(draft.unit)}" placeholder="例如：一元二次方程式" required></label>
+        <label class="is-wide"><span>題幹文字 <small>圖表題強烈建議填寫</small></span><textarea name="questionText" rows="3" maxlength="1200" placeholder="可貼上或輸入題目文字；圖表題請補充題目問什麼、座標軸或單位。">${escapeHtml(draft.questionText)}</textarea></label>
         <label class="is-wide"><span>我卡住的地方</span><textarea name="studentThinking" rows="2" maxlength="500" placeholder="例如：我不知道要先設哪一個未知數。">${escapeHtml(draft.studentThinking)}</textarea></label>
       </div>
-      <div class="coach-photo-privacy"><span aria-hidden="true">盾</span><p>請不要拍到姓名、准考證或其他個人資料。${configured ? "照片會送到已設定的安全後端分析。" : "目前尚未連接照片辨識後端；題庫與數位錯題仍可直接使用。"}</p></div>
+      <div class="coach-photo-privacy"><span aria-hidden="true">盾</span><p>請不要拍到姓名、准考證或其他個人資料。${configured ? "照片會以清晰模式送到安全後端分析；若圖中文字太小，請裁切成單一題並補上題幹文字。" : "目前尚未連接照片辨識後端；題庫與數位錯題仍可直接使用。"}</p></div>
       <p class="coach-photo-status ${state.photoStatusError ? "is-error" : ""}" role="status">${escapeHtml(state.photoStatus)}</p>
       <button class="button button-primary button-full" type="submit" ${state.photoBusy ? "disabled" : ""}>${state.photoBusy ? "AI 正在讀題…" : configured ? "請 AI 科目老師分析" : "檢查照片詢問設定"}</button>
     </form>`;
@@ -921,6 +922,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "exam-coach-photo-question",
+          requestMode: "similar-practice",
           subjectId: subject.id,
           unit: question.unit || "同觀念加強",
           questionText: getQuestionTextForSimilar(question),
@@ -930,7 +932,7 @@
         })
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || `AI 出題服務暫時無法使用（${response.status}）。`);
+      if (!response.ok) throw new Error(`${payload.error || `AI 出題服務暫時無法使用（${response.status}）。`}${payload.requestId ? `（診斷編號：${payload.requestId.slice(0, 8)}）` : ""}`);
       const candidates = Array.isArray(payload?.similarQuestions) ? payload.similarQuestions : [];
       if (!candidates.length) throw new Error("AI 沒有回傳可用的相似題，請稍後再試。");
       question.similarQuestions = candidates;
@@ -1000,6 +1002,7 @@
     const values = new FormData(form);
     state.photoDraft = {
       subjectId: String(values.get("subjectId") || "chinese"),
+      imageMode: String(values.get("imageMode") || "text") === "chart" ? "chart" : "text",
       unit: String(values.get("unit") || "").trim(),
       questionText: String(values.get("questionText") || "").trim(),
       studentThinking: String(values.get("studentThinking") || "").trim()
@@ -1016,25 +1019,38 @@
     }
   }
 
-  function compressPhoto(file) {
+  function compressPhoto(file, imageMode = "text") {
     return new Promise((resolve, reject) => {
       if (!file || !file.type.startsWith("image/")) return reject(new Error("請選擇圖片檔案。"));
-      if (file.size > 12 * 1024 * 1024) return reject(new Error("圖片超過 12MB，請先裁切或改用較小的照片。"));
+      if (file.size > 20 * 1024 * 1024) return reject(new Error("圖片超過 20MB，請先裁切成單一題目後再上傳。"));
       const reader = new FileReader();
       reader.onerror = () => reject(new Error("無法讀取這張圖片。"));
       reader.onload = () => {
         const image = new Image();
         image.onerror = () => reject(new Error("圖片格式無法使用。"));
         image.onload = () => {
-          const scale = Math.min(1, 1280 / Math.max(image.width, image.height));
-          const canvas = document.createElement("canvas");
-          canvas.width = Math.max(1, Math.round(image.width * scale));
-          canvas.height = Math.max(1, Math.round(image.height * scale));
-          const context = canvas.getContext("2d");
-          context.fillStyle = "#ffffff";
-          context.fillRect(0, 0, canvas.width, canvas.height);
-          context.drawImage(image, 0, 0, canvas.width, canvas.height);
-          resolve(canvas.toDataURL("image/jpeg", 0.76));
+          // 圖表與座標圖需要較多像素才看得清刻度；同時控制在 Worker 可安全接收的大小內。
+          const maxSide = imageMode === "chart" ? 2200 : 1800;
+          const targetLength = 4_800_000;
+          let scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+          let result = "";
+          for (let attempt = 0; attempt < 5; attempt += 1) {
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(image.width * scale));
+            canvas.height = Math.max(1, Math.round(image.height * scale));
+            const context = canvas.getContext("2d");
+            context.imageSmoothingEnabled = true;
+            context.imageSmoothingQuality = "high";
+            context.fillStyle = "#ffffff";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+            const quality = Math.max(0.72, 0.92 - attempt * 0.05);
+            result = canvas.toDataURL("image/jpeg", quality);
+            if (result.length <= targetLength) break;
+            scale *= 0.82;
+          }
+          if (!result || result.length > targetLength) return reject(new Error("圖片細節過多，請裁切成單一題與圖表後再上傳。"));
+          resolve(result);
         };
         image.src = String(reader.result);
       };
@@ -1046,8 +1062,8 @@
     try {
       updatePhotoDraft();
       setPhotoStatus("正在整理照片…");
-      state.photoImage = await compressPhoto(file);
-      state.photoStatus = "照片已準備好；請確認科目與單元。";
+      state.photoImage = await compressPhoto(file, state.photoDraft.imageMode);
+      state.photoStatus = state.photoDraft.imageMode === "chart" ? "圖表清晰模式已準備好；請確認單元並盡量補上題幹文字。" : "照片已準備好；請確認科目與單元。";
       state.photoStatusError = false;
       renderQuestionList();
     } catch (error) {
@@ -1079,16 +1095,18 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "exam-coach-photo-question",
+          requestMode: "analysis",
           subjectId: values.subjectId,
+          imageMode: values.imageMode,
           unit: values.unit,
           questionText: values.questionText,
           studentThinking: values.studentThinking,
           imageData: state.photoImage,
-          prompt: `${buildCoachPrompt(values.subjectId)} 請回傳 JSON：question 為辨識後題目；analysis 包含 fixedSections、subjectFields、noteToolkit、summaries；similarQuestions 為三題同考點、不同情境的四選一原創題。每題包含 id、unit、ability、difficulty、prompt、options、answer（0 到 3）、explanation、commonError。`
+          prompt: `${buildCoachPrompt(values.subjectId)} 請先完成題目辨識與固定格式的錯題分析；相似題改由學生之後主動建立。`
         })
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || `照片分析服務暫時無法使用（${response.status}）。`);
+      if (!response.ok) throw new Error(`${payload.error || `照片分析服務暫時無法使用（${response.status}）。`}${payload.requestId ? `（診斷編號：${payload.requestId.slice(0, 8)}）` : ""}`);
       if (!payload || typeof payload !== "object") throw new Error("照片分析結果格式不正確。");
       startPhotoSession(values.subjectId, payload, values);
     } catch (error) {

@@ -42,7 +42,7 @@
 - `digital-wrong-notebook.js`：數位錯題記錄、AI 分析後選擇收藏、圖片縮小、分類篩選、間隔複習、弱點分析與 localStorage 資料。
 - `weekly-plan-reminder.js`：週六晚間提醒、延後／略過狀態、下週日期與複習計畫導引。
 - `appearance-backup.js`：清爽／繽紛版切換、完整資料匯出、備份檔驗證、覆蓋前確認與安全還原。
-- `ai-coach.js`：錯題整合中心、雙 AI 老師分工、紙本拍照分析、安全後端呼叫、五步驟引導、可列印會考筆記、選擇收藏、相似題建立、固定九段診斷與 localStorage 陪練紀錄。
+- `ai-coach.js`：錯題整合中心、雙 AI 老師分工、紙本拍照分析（含圖表清晰模式）、安全後端呼叫、五步驟引導、可列印會考筆記、選擇收藏、相似題建立、固定九段診斷與 localStorage 陪練紀錄。
 - `question-bank.js`：五科單元重點、能力標記、難度與原創題庫的集中設定檔。
 - `exam-question-bank.js`：五科中高難度會考素養題，集中管理圖表資料與詳細解析。
 - `historical-exam-bank.js`：民國 108～114 年命題趨勢的五科原創實戰題與年度標記；官方原題入口集中在檔案最上方。
