@@ -1,6 +1,6 @@
 # ExamMate｜國中會考五科自主學習平台
 
-這是一個給即將參加國中教育會考學生使用的自主學習網站。個人資料、學習進度、計畫、錯題與圖片仍只儲存在目前瀏覽器的 `localStorage`；只有學生主動提交的拍照題會送到 Cloudflare Worker，再由 Google Gemini 進行辨識與分析。Gemini API Key 僅存放在 Cloudflare Secret，不會出現在前端或 GitHub。
+這是一個給即將參加國中教育會考學生使用的自主學習網站。第一次使用時，個人資料、學習進度、計畫、錯題與圖片會先保留在目前瀏覽器；學生可自行用 Email 登入，將資料同步到自己的 Supabase 帳號，在其他載具接續使用。只有學生主動提交的拍照題會送到 Cloudflare Worker，再由 Google Gemini 進行辨識與分析。Gemini API Key 僅存放在 Cloudflare Secret，不會出現在前端或 GitHub。
 
 ## 網站架構
 

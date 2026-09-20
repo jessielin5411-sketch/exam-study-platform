@@ -17,6 +17,16 @@ const examConfig = {
     customQuestionEnabled: true,
     endpoint: "https://exammate-ai-coach.curse-beet.workers.dev/api/analyze-question"
   },
+  /*
+   * Supabase 雲端同步設定。
+   * publishableKey 是給瀏覽器使用的公開金鑰；真正保護資料的是 Supabase 的「每位學生只能存取自己資料」規則。
+   * 千萬不要把 service_role、資料庫密碼或 Gemini API Key 放到這個前端檔案。
+   */
+  supabase: {
+    enabled: true,
+    url: "https://cmcqwiogolzffmrwczbp.supabase.co",
+    publishableKey: "sb_publishable_ZNAIiOyGP3OSOnzHaYjymQ_eiH2mZxv"
+  },
   defaultYear: "116",
   examYears: {
     "116": {

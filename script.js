@@ -101,6 +101,8 @@
   function safeWrite(key, value) {
     try {
       localStorage.setItem(key, JSON.stringify(value));
+      // 已登入時通知雲端同步模組；未登入時仍只保留在這台裝置。
+      document.dispatchEvent(new CustomEvent("exammate:local-data-changed", { detail: { key } }));
       return true;
     } catch (error) {
       showToast("瀏覽器無法儲存資料，請確認未停用網站儲存空間。", true);
@@ -472,6 +474,8 @@
   function resetAllData() {
     try {
       Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+      // 已登入時，同步模組會將空白狀態安全寫回自己的雲端快照。
+      document.dispatchEvent(new CustomEvent("exammate:local-data-changed", { detail: { key: "reset" } }));
     } catch (error) {
       showToast("瀏覽器拒絕清除資料，請檢查網站儲存空間設定。", true);
       return;

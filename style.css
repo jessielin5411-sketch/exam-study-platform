@@ -1425,6 +1425,63 @@ html[data-theme="colorful"] .coach-teacher-card.is-note-teacher { background: li
 }
 
 /* 橫式 A4 列印版：參考紙本複習計畫，保留清楚日期、時段與會考提醒。 */
+/* 帳號登入與雲端同步：保持陪讀感，也清楚呈現資料狀態。 */
+.account-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid #b8d9e7;
+  border-radius: 13px;
+  color: #235d78;
+  background: #f2fbff;
+  box-shadow: 0 4px 10px rgba(53, 113, 142, 0.12);
+  font: inherit;
+  cursor: pointer;
+}
+.account-button:hover { transform: translateY(-1px); background: #e5f7ff; }
+.account-button:focus-visible { outline: 3px solid #f6b45e; outline-offset: 2px; }
+.account-dialog { width: min(620px, calc(100% - 28px)); padding: 0; overflow: hidden; border: 1px solid #cce5ee; border-radius: 25px; color: #23455a; background: #fbfeff; box-shadow: 0 24px 80px rgba(20, 42, 102, 0.26); }
+.account-dialog::backdrop { background: rgba(17, 39, 79, 0.46); backdrop-filter: blur(3px); }
+.account-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 28px 30px 20px; color: #fff; background: linear-gradient(125deg, #183575, #2f7e9b); }
+.account-dialog-header .section-label { color: #cceefa; }
+.account-dialog-header h2 { margin: 4px 0 7px; font-size: clamp(1.45rem, 4vw, 2rem); }
+.account-dialog-header p:not(.section-label) { max-width: 480px; margin: 0; color: #e9f9ff; line-height: 1.7; }
+.account-dialog-header .icon-button { flex: 0 0 auto; color: #fff; border-color: rgba(255,255,255,.45); background: rgba(255,255,255,.12); }
+.account-panel { padding: 28px 30px 30px; }
+.account-illustration { display: grid; place-items: center; width: 58px; height: 58px; margin-bottom: 14px; border-radius: 18px; color: #fff; background: linear-gradient(140deg, #ffc362, #ee8e82); box-shadow: 0 9px 20px rgba(230, 129, 91, .2); font-size: 1.65rem; }
+.account-panel h3 { margin: 0 0 8px; color: #173f63; font-size: 1.2rem; }
+.account-panel > p { margin: 0 0 18px; color: #587482; line-height: 1.7; }
+.magic-link-form { display: grid; gap: 13px; }
+.magic-link-form .field { gap: 7px; }
+.account-feedback { min-height: 1.5em; margin: 14px 0 0; color: #33718a; font-weight: 700; line-height: 1.55; }
+.account-feedback.is-error { color: #ad4d5d; }
+.account-safety-note { display: flex; align-items: flex-start; gap: 10px; margin-top: 20px; padding: 13px 14px; border-radius: 15px; color: #467183; background: #edf8fb; }
+.account-safety-note span { display: grid; place-items: center; width: 28px; height: 28px; flex: 0 0 auto; border-radius: 9px; color: #fff; background: #4f9cb1; font-weight: 800; }
+.account-safety-note p { margin: 0; font-size: .89rem; line-height: 1.6; }
+.account-member-summary { display: flex; align-items: center; gap: 12px; padding-bottom: 19px; border-bottom: 1px solid #dcecf2; }
+.account-avatar { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 15px; color: #fff; background: linear-gradient(145deg, #436eae, #64b5c6); font-weight: 900; }
+.account-member-summary small { display: block; margin-bottom: 3px; color: #66808d; }
+.account-member-summary strong { color: #214d69; overflow-wrap: anywhere; }
+.cloud-sync-status { margin: 18px 0 0; padding: 13px 15px; border-radius: 14px; color: #3b6e80; background: #edf8fb; font-weight: 700; line-height: 1.55; }
+.cloud-sync-status[data-mode="loading"] { color: #2f638b; background: #edf5ff; }
+.cloud-sync-status[data-mode="success"] { color: #2b796a; background: #eaf8f2; }
+.cloud-sync-status[data-mode="warning"] { color: #936620; background: #fff7df; }
+.cloud-sync-status[data-mode="error"] { color: #aa4d5d; background: #fff0f1; }
+.cloud-conflict-actions { margin-top: 15px; padding: 17px; border: 1px solid #f2d99c; border-radius: 16px; background: #fffaf0; }
+.cloud-conflict-actions p { margin: 0 0 12px; color: #765a2a; line-height: 1.6; }
+.cloud-conflict-actions .button { width: 100%; margin-top: 8px; }
+.account-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 17px; }
+
+@media (max-width: 640px) {
+  .account-button { min-width: 38px; justify-content: center; padding: 8px; }
+  .account-button strong { display: none; }
+  .account-dialog-header, .account-panel { padding-right: 19px; padding-left: 19px; }
+  .account-dialog-header { padding-top: 22px; }
+  .account-actions { grid-template-columns: 1fr; }
+}
+
 @page {
   size: A4 landscape;
   margin: 8mm;

@@ -1,0 +1,14 @@
+{
+  "name": "ExamMate｜國中會考五科自主學習平台",
+  "short_name": "ExamMate",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f8ff",
+  "theme_color": "#142a66",
+  "description": "陪伴國中生規劃會考複習、累積五科練習與整理錯題。",
+  "icons": [
+    { "src": "assets/exammate-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

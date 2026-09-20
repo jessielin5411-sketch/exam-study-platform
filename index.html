@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#142a66">
   <meta name="description" content="ExamMate 國中會考五科自主學習平台，陪你每天完成一點、穩定前進。">
+  <link rel="manifest" href="manifest.webmanifest">
   <title>ExamMate｜國中會考五科自主學習平台</title>
   <link rel="stylesheet" href="style.css?v=20260919-1">
 </head>
@@ -139,6 +140,9 @@
           <button class="nav-item" type="button" data-app-view="wrong"><span class="nav-icon" aria-hidden="true">解</span>錯題整合</button>
         </nav>
         <div class="topbar-tools">
+          <button id="open-account-dialog" class="account-button" type="button" aria-haspopup="dialog">
+            <span aria-hidden="true">雲</span><strong id="account-button-label">登入同步</strong>
+          </button>
           <button id="open-appearance-backup" class="appearance-backup-button" type="button" aria-haspopup="dialog">
             <span aria-hidden="true">彩</span><strong id="current-theme-label">清爽版</strong>
           </button>
@@ -988,12 +992,57 @@
     </section>
   </dialog>
 
+  <dialog id="account-dialog" class="account-dialog" aria-labelledby="account-dialog-title">
+    <header class="account-dialog-header">
+      <div>
+        <p class="section-label">MY EXAMMATE ACCOUNT</p>
+        <h2 id="account-dialog-title">登入並同步我的學習資料</h2>
+        <p>登入後，個人資料、計畫、錯題與 AI 學習紀錄會安全同步到自己的帳號；換手機或電腦也能接續使用。</p>
+      </div>
+      <button id="close-account-dialog" class="icon-button" type="button" aria-label="關閉登入與同步視窗">×</button>
+    </header>
+
+    <section id="account-guest-panel" class="account-panel">
+      <div class="account-illustration" aria-hidden="true">✦</div>
+      <h3>用 Email 連結登入，不必記新密碼</h3>
+      <p>輸入常用信箱後，我們會寄一封登入連結給你。請在同一台裝置開啟信件完成登入。</p>
+      <form id="magic-link-form" class="magic-link-form" novalidate>
+        <label class="field">
+          <span>Email <em>必填</em></span>
+          <input id="magic-link-email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="例如：student@example.com" required>
+        </label>
+        <button id="send-magic-link" class="button button-primary button-full" type="submit">寄送登入連結</button>
+      </form>
+      <p id="magic-link-feedback" class="account-feedback" role="status"></p>
+      <div class="account-safety-note"><span aria-hidden="true">鎖</span><p>你的錯題、照片與學習資料只會屬於自己的帳號。平台不會要求你提供 API Key 或資料庫密碼。</p></div>
+    </section>
+
+    <section id="account-member-panel" class="account-panel" hidden>
+      <div class="account-member-summary">
+        <span class="account-avatar" aria-hidden="true">我</span>
+        <div><small>目前登入</small><strong id="account-email-display">—</strong></div>
+      </div>
+      <div id="cloud-sync-status" class="cloud-sync-status">正在確認雲端資料…</div>
+      <div id="cloud-conflict-actions" class="cloud-conflict-actions" hidden>
+        <p>這台裝置和雲端都已有資料，請選擇這次要保留哪一份。</p>
+        <button id="upload-local-snapshot" class="button button-primary" type="button">以這台資料更新雲端</button>
+        <button id="download-cloud-snapshot" class="button button-secondary" type="button">下載雲端資料到這台</button>
+      </div>
+      <div class="account-actions">
+        <button id="sync-now-button" class="button button-primary" type="button">立即同步</button>
+        <button id="sign-out-button" class="button button-secondary" type="button">登出此帳號</button>
+      </div>
+      <p id="account-member-feedback" class="account-feedback" role="status"></p>
+      <div class="account-safety-note"><span aria-hidden="true">盾</span><p>若多人共用同一台裝置，登出後建議仍保留自己的備份檔；雲端資料不會因登出而刪除。</p></div>
+    </section>
+  </dialog>
+
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <noscript>
     <div class="noscript-message">此網站需要啟用 JavaScript 才能顯示倒數與儲存資料。</div>
   </noscript>
-  <script src="config.js?v=20260825-1"></script>
+  <script src="config.js?v=20260920-1"></script>
   <script src="script.js"></script>
   <script src="question-bank.js"></script>
   <script src="exam-question-bank.js"></script>
@@ -1010,5 +1059,8 @@
   <script src="ai-coach.js?v=20260919-2"></script>
   <script src="weekly-plan-reminder.js"></script>
   <script src="appearance-backup.js?v=20260825-1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="supabase-sync.js?v=20260920-1"></script>
+  <script src="pwa.js?v=20260920-1"></script>
 </body>
 </html>

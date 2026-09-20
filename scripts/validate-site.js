@@ -13,7 +13,7 @@ const aiCoachPromptSource = aiCoachSource.slice(
 const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
 const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
 const scriptSources = [...html.matchAll(/<script src="([^"]+)"/g)].map((match) => match[1]);
-const missingScripts = scriptSources.filter((source) => !fs.existsSync(source.split(/[?#]/)[0]));
+const missingScripts = scriptSources.filter((source) => !/^https?:\/\//.test(source) && !fs.existsSync(source.split(/[?#]/)[0]));
 const historicalYears = [...new Set([...historicalExamSource.matchAll(/referenceYear:(10[89]|11[0-4])/g)].map((match) => Number(match[1])))].sort((a, b) => a - b);
 
 const css = fs.readFileSync("style.css", "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
